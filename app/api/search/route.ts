@@ -154,9 +154,11 @@ export async function POST(request: NextRequest) {
       try {
         console.log('[Search API] Detected product recommendation request, fetching products...');
         // 從回應中提取可能的條件（這是一個簡化版本，未來可以改進）
-        recommendedProducts = await recommendProducts({
-          limit: 5, // 預設推薦 5 個商品
-        });
+        recommendedProducts = await recommendProducts({});
+        // 限制返回數量為 5 個
+        if (recommendedProducts.length > 5) {
+          recommendedProducts = recommendedProducts.slice(0, 5);
+        }
         console.log('[Search API] Found', recommendedProducts.length, 'products to recommend');
       } catch (error) {
         console.error('Error fetching recommended products:', error);
