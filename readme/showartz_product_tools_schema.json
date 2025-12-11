@@ -1,0 +1,81 @@
+{
+  "name": "showartz_product_tools",
+  "schema_version": "1.0",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "recommend_products": {
+        "type": "function",
+        "function": {
+          "name": "recommend_products",
+          "description": "根據用戶的預算、分類、標籤與目標，推薦適合的商品。",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "budget": {
+                "type": "number",
+                "description": "用戶的預算上限（台幣）。"
+              },
+              "category": {
+                "type": "string",
+                "description": "商品分類，例如：後背包、側背包、腰包、零錢包等。"
+              },
+              "tags": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "商品標籤例如：[\"貓頭鷹\", \"黑色\", \"M\", \"尼龍\"]。"
+              },
+              "goal": {
+                "type": "string",
+                "description": "用戶想改善的目標，例如：情緒穩定、自我覺察、行動力等。"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "最多返回的商品數量，預設為 5。",
+                "default": 5
+              }
+            },
+            "required": []
+          }
+        }
+      },
+      "search_products_by_tags": {
+        "type": "function",
+        "function": {
+          "name": "search_products_by_tags",
+          "description": "根據商品標籤搜尋商品，例如搜尋特定動物、顏色、尺寸等。",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "tags": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "商品標籤列表，例如：[\"貓頭鷹\", \"黑色\", \"M\"]。"
+              }
+            },
+            "required": ["tags"]
+          }
+        }
+      },
+      "get_all_products": {
+        "type": "function",
+        "function": {
+          "name": "get_all_products",
+          "description": "取得所有可用的商品列表，用於了解目前有哪些商品可供推薦。",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "limit": {
+                "type": "integer",
+                "description": "最多返回的商品數量，預設為 20。",
+                "default": 20
+              }
+            },
+            "required": []
+          }
+        }
+      }
+    }
+  }
+}
+

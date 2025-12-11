@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: showartz-postgres
+    environment:
+      POSTGRES_USER: showartz
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: showartz
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U showartz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: showartz-app
+    environment:
+      DATABASE_URL: postgresql://showartz:${POSTGRES_PASSWORD:-changeme}@postgres:5432/showartz
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_ASSISTANT_ID: ${OPENAI_ASSISTANT_ID}
+      SESSION_SECRET: ${SESSION_SECRET:-change-this-secret}
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
