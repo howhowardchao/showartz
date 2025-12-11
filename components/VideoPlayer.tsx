@@ -68,7 +68,7 @@ export default function VideoPlayer({ video, onClose }: VideoPlayerProps) {
                   style={{ minHeight: '400px' }}
                   frameBorder="0"
                   scrolling="no"
-                  allowtransparency="true"
+                  allowTransparency={true}
                   allow="encrypted-media; autoplay; fullscreen"
                   allowFullScreen
                   className="w-full h-full absolute inset-0"
