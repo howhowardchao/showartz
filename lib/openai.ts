@@ -151,7 +151,7 @@ export async function sendMessage(threadId: string, message: string) {
       // Submit tool outputs
       if (toolOutputs.length > 0) {
         try {
-          run = await openai.beta.threads.runs.submitToolOutputs(threadId, run.id, {
+          run = await openai.beta.threads.runs.submitToolOutputs(run.id, {
             tool_outputs: toolOutputs,
           });
         } catch (error: any) {
