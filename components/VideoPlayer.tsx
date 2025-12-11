@@ -2,10 +2,7 @@
 
 import { Video } from '@/lib/types';
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
+import { useEffect } from 'react';
 
 interface VideoPlayerProps {
   video: Video | null;
@@ -113,14 +110,18 @@ export default function VideoPlayer({ video, onClose }: VideoPlayerProps) {
               </a>
             </div>
           ) : (
-            <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              <ReactPlayer
-                url={video.ig_url}
-                width="100%"
-                height="100%"
-                controls
-                playing
-              />
+            <div className="aspect-video bg-black rounded-lg overflow-hidden flex flex-col items-center justify-center p-8">
+              <p className="text-magic-gold-light mb-6 text-center font-magic text-xl">
+                影片播放
+              </p>
+              <a
+                href={cleanUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-magic-gold text-magic-dark px-8 py-4 rounded-lg font-magic hover:bg-magic-gold-light transition-colors magic-glow inline-flex items-center gap-2"
+              >
+                在新視窗開啟影片
+              </a>
             </div>
           )}
           
