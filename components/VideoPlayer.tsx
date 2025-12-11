@@ -2,8 +2,10 @@
 
 import { Video } from '@/lib/types';
 import { X } from 'lucide-react';
-import { useEffect } from 'react';
-import ReactPlayer from 'react-player';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 interface VideoPlayerProps {
   video: Video | null;
