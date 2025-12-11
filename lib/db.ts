@@ -206,7 +206,7 @@ export async function updateVideo(
 
 export async function deleteVideo(id: string): Promise<boolean> {
   const result = await pool.query('DELETE FROM videos WHERE id = $1', [id]);
-  return result.rowCount > 0;
+  return (result.rowCount ?? 0) > 0;
 }
 
 // Image operations
@@ -238,7 +238,7 @@ export async function createImage(
 
 export async function deleteImage(id: string): Promise<boolean> {
   const result = await pool.query('DELETE FROM images WHERE id = $1', [id]);
-  return result.rowCount > 0;
+  return (result.rowCount ?? 0) > 0;
 }
 
 // Admin operations
@@ -576,7 +576,7 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string): Promise<boolean> {
   const result = await pool.query('DELETE FROM products WHERE id = $1', [id]);
-  return result.rowCount > 0;
+  return (result.rowCount ?? 0) > 0;
 }
 
 export default pool;
