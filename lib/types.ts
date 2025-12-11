@@ -36,7 +36,8 @@ export interface Product {
   original_price?: number;
   image_url?: string;
   image_urls?: string[];
-  shopee_url: string;
+  shopee_url?: string;
+  pinkoi_url?: string;
   category?: string;
   tags?: string[];
   stock: number;
