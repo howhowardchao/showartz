@@ -123,8 +123,10 @@ export async function sendMessage(threadId: string, message: string) {
   const startTime = Date.now();
 
   while (Date.now() - startTime < maxWaitTime) {
-    // OpenAI SDK v6: retrieve(threadId, runId)
-    let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
+    // OpenAI SDK v6: retrieve(runId, params) where params includes thread_id
+    let runStatus = await openai.beta.threads.runs.retrieve(run.id, {
+      thread_id: threadId,
+    });
 
     // Handle function calling
     if (runStatus.status === 'requires_action' && runStatus.required_action?.type === 'submit_tool_outputs') {
