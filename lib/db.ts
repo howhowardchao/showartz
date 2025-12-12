@@ -14,18 +14,23 @@ const getDatabaseConfig = () => {
     };
   }
   
+  // Check if connecting to Docker internal postgres (no SSL needed)
+  const isDockerInternal = dbUrl.includes('@postgres:') || dbUrl.includes('host=postgres');
+  
   // If it's a full connection string, use it
   if (dbUrl.startsWith('postgresql://')) {
     return {
       connectionString: dbUrl,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      // Docker internal connections don't need SSL
+      ssl: isDockerInternal ? false : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false),
     };
   }
   
   // Otherwise parse as connection string
   return {
     connectionString: dbUrl,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    // Docker internal connections don't need SSL
+    ssl: isDockerInternal ? false : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false),
   };
 };
 

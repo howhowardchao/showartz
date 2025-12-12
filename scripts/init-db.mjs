@@ -12,8 +12,13 @@ const __dirname = dirname(__filename);
 // Load environment variables
 config({ path: join(__dirname, '..', '.env.local') });
 
+// Check if connecting to Docker internal postgres (no SSL needed)
+const isDockerInternal = process.env.DATABASE_URL?.includes('@postgres:') || process.env.DATABASE_URL?.includes('host=postgres');
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // Docker internal connections don't need SSL
+  ssl: isDockerInternal ? false : undefined,
 });
 
 async function initDatabase() {
