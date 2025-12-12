@@ -261,10 +261,10 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
               try {
                 // 嘗試多種 JSON 格式
                 const patterns = [
-                  /\{.*"itemid".*\}/s,
-                  /\{.*"items".*\}/s,
-                  /window\._SHOPEE_INITIAL_STATE__\s*=\s*(\{.*?\});/s,
-                  /__INITIAL_STATE__\s*=\s*(\{.*?\});/s,
+                  /\{[\s\S]*"itemid"[\s\S]*\}/,
+                  /\{[\s\S]*"items"[\s\S]*\}/,
+                  /window\._SHOPEE_INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/,
+                  /__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/,
                 ];
                 
                 for (const pattern of patterns) {
@@ -326,7 +326,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
             
             if (!productCards || productCards.length === 0) {
               // 最後嘗試：查找所有包含 /product/ 的連結（更廣泛的搜尋）
-              let allLinks = document.querySelectorAll('a[href*="/product/"]');
+              let allLinks: Element[] = Array.from(document.querySelectorAll('a[href*="/product/"]'));
               console.log(`[DOM Extract] Found ${allLinks.length} product links with /product/`);
               
               // 如果還是沒有，嘗試查找所有連結並過濾
@@ -341,7 +341,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                   }
                   return isProduct;
                 });
-                allLinks = filteredLinks as NodeListOf<Element>;
+                allLinks = filteredLinks;
                 console.log(`[DOM Extract] Found ${allLinks.length} potential product links after filtering`);
                 
                 // 如果還是沒有，嘗試查找所有包含數字的連結（可能是商品 ID）
@@ -350,7 +350,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                     const href = link.getAttribute('href') || link.href || '';
                     return /\/\d+\/\d+/.test(href) && href.includes(shopId.toString());
                   });
-                  allLinks = numericLinks as NodeListOf<Element>;
+                  allLinks = numericLinks;
                   console.log(`[DOM Extract] Found ${allLinks.length} numeric links matching shop ID`);
                 }
               }
@@ -561,6 +561,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                 shop_id: shopId,
                 name: `商品 ${itemId}`,
                 price: 0,
+                images: [],
                 url: `https://shopee.tw/product/${shopId}/${itemId}`,
               });
             }

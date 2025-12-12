@@ -152,6 +152,7 @@ export async function sendMessage(threadId: string, message: string) {
       if (toolOutputs.length > 0) {
         try {
           run = await openai.beta.threads.runs.submitToolOutputs(run.id, {
+            thread_id: threadId,
             tool_outputs: toolOutputs,
           });
         } catch (error: any) {

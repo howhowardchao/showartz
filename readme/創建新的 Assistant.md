@@ -117,3 +117,4 @@
 - Function Calling 需要 OpenAI API 的付費帳號
 - 確保 API Key 有足夠的權限訪問 Assistant API
 
+

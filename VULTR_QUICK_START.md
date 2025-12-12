@@ -158,3 +158,4 @@ certbot --nginx -d your-domain.com -d www.your-domain.com
 3. 檢查端口：`netstat -tulpn | grep 3000`
 4. 查看詳細指南：`DEPLOY_VULTR.md`
 
+

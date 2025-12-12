@@ -360,7 +360,7 @@ async function fetchImagesFromDetailPages(products: PinkoiProduct[], page: any):
       
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const images = await page.evaluate((productId) => {
+      const images = await page.evaluate((productId: string) => {
         const imageUrls: string[] = [];
         
         // 方法 1: 從圖片元素提取
