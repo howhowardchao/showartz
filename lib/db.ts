@@ -34,7 +34,14 @@ const getDatabaseConfig = () => {
   };
 };
 
-const pool = new Pool(getDatabaseConfig());
+const poolConfig = {
+  ...getDatabaseConfig(),
+  max: 20, // 最大連接數
+  idleTimeoutMillis: 30000, // 空閒連接超時（30秒）
+  connectionTimeoutMillis: 2000, // 連接超時（2秒）
+};
+
+const pool = new Pool(poolConfig);
 
 // Initialize database schema
 export async function initDatabase() {

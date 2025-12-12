@@ -26,6 +26,26 @@ const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID || '';
  * 完整提示詞請參考：readme/showartz Tarot 顧問＋商品推薦助理提示詞
  */
 
+// Debug logging helper - only log in development
+const debugLog = (...args: any[]) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(...args);
+  }
+};
+
+const debugError = (...args: any[]) => {
+  // Always log errors, but with less detail in production
+  if (process.env.NODE_ENV === 'development') {
+    console.error(...args);
+  } else {
+    // In production, only log error messages without stack traces
+    const messages = args.map(arg => 
+      arg instanceof Error ? arg.message : String(arg)
+    );
+    console.error(...messages);
+  }
+};
+
 // Debug logging in development
 if (process.env.NODE_ENV === 'development') {
   if (!process.env.OPENAI_API_KEY) {
@@ -52,7 +72,7 @@ export async function createThread() {
 
 // Send message and get response with Function Calling support
 export async function sendMessage(threadId: string, message: string) {
-  console.log('[OpenAI] sendMessage called:', { threadId, messageLength: message.length });
+  debugLog('[OpenAI] sendMessage called:', { threadId, messageLength: message.length });
   
   if (!threadId) {
     throw new Error('Thread ID is required');
@@ -70,27 +90,27 @@ export async function sendMessage(threadId: string, message: string) {
 
   // Add message to thread
   try {
-    console.log('[OpenAI] Creating message in thread...');
+    debugLog('[OpenAI] Creating message in thread...');
     await openai.beta.threads.messages.create(threadId, {
       role: 'user',
       content: message,
     });
-    console.log('[OpenAI] Message created successfully');
+    debugLog('[OpenAI] Message created successfully');
   } catch (error: any) {
-    console.error('[OpenAI] Error creating message:', error);
+    debugError('[OpenAI] Error creating message:', error);
     throw new Error(`Failed to create message: ${error?.message || String(error)}`);
   }
 
   // Run assistant
   let run;
   try {
-    console.log('[OpenAI] Creating run with assistant:', ASSISTANT_ID);
+    debugLog('[OpenAI] Creating run with assistant:', ASSISTANT_ID);
     run = await openai.beta.threads.runs.create(threadId, {
       assistant_id: ASSISTANT_ID,
     });
-    console.log('[OpenAI] Run created:', run.id, 'Status:', run.status);
+    debugLog('[OpenAI] Run created:', run.id, 'Status:', run.status);
   } catch (error: any) {
-    console.error('[OpenAI] Error creating run:', error);
+    debugError('[OpenAI] Error creating run:', error);
     throw new Error(`Failed to create run: ${error?.message || String(error)}`);
   }
 
@@ -103,7 +123,7 @@ export async function sendMessage(threadId: string, message: string) {
   const startTime = Date.now();
 
   while (Date.now() - startTime < maxWaitTime) {
-    let runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: threadId });
+    let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
 
     // Handle function calling
     if (runStatus.status === 'requires_action' && runStatus.required_action?.type === 'submit_tool_outputs') {
@@ -118,7 +138,7 @@ export async function sendMessage(threadId: string, message: string) {
           try {
             functionArgs = JSON.parse(toolCall.function.arguments);
           } catch (e) {
-            console.error('Error parsing function arguments:', e);
+            debugError('Error parsing function arguments:', e);
             toolOutputs.push({
               tool_call_id: toolCall.id,
               output: JSON.stringify({ success: false, error: 'Invalid function arguments' }),
@@ -136,7 +156,7 @@ export async function sendMessage(threadId: string, message: string) {
               output: JSON.stringify(result),
             });
           } catch (error: any) {
-            console.error(`Error executing function ${functionName}:`, error);
+            debugError(`Error executing function ${functionName}:`, error);
             toolOutputs.push({
               tool_call_id: toolCall.id,
               output: JSON.stringify({ 
@@ -151,12 +171,11 @@ export async function sendMessage(threadId: string, message: string) {
       // Submit tool outputs
       if (toolOutputs.length > 0) {
         try {
-          run = await openai.beta.threads.runs.submitToolOutputs(run.id, {
-            thread_id: threadId,
+          run = await openai.beta.threads.runs.submitToolOutputs(threadId, run.id, {
             tool_outputs: toolOutputs,
           });
         } catch (error: any) {
-          console.error('Error submitting tool outputs:', error);
+          debugError('Error submitting tool outputs:', error);
           throw new Error(`Failed to submit tool outputs: ${error?.message || String(error)}`);
         }
       }
@@ -185,7 +204,7 @@ export async function sendMessage(threadId: string, message: string) {
     if (runStatus.status === 'failed') {
       const errorMessage = runStatus.last_error?.message || 'Unknown error';
       const errorCode = runStatus.last_error?.code;
-      console.error('OpenAI Run failed:', {
+      debugError('OpenAI Run failed:', {
         status: runStatus.status,
         error: errorMessage,
         code: errorCode,
