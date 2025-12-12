@@ -439,33 +439,70 @@ npm run dev
    - 登入後台：http://your-domain.com/admin
    - 點擊「同步 Pinkoi 商品」
 
-### Nginx 反向代理（可選）
+### Nginx 反向代理配置
+
+#### 基本配置
 
 編輯 `/etc/nginx/sites-available/showartz`：
 
 ```nginx
+# HTTP 重定向到 HTTPS
 server {
     listen 80;
-    server_name your-domain.com;
+    server_name showartz.com www.showartz.com;
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS 主配置
+server {
+    listen 443 ssl;
+    server_name showartz.com www.showartz.com;
+
+    # 增加客戶端請求體大小限制（10MB）- 用於文件上傳
+    client_max_body_size 10M;
+
+    # SSL 證書配置（由 Certbot 管理）
+    ssl_certificate /etc/letsencrypt/live/showartz.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/showartz.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # 直接服務上傳的文件（繞過 Next.js standalone 模式限制）
+    location /uploads/ {
+        alias /opt/showartz/public/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
 
     location / {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
 }
 ```
 
-啟用站點：
+#### 啟用站點
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/showartz /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
-sudo certbot --nginx -d your-domain.com
+sudo certbot --nginx -d showartz.com -d www.showartz.com
 ```
+
+#### 重要配置說明
+
+1. **`client_max_body_size 10M`**：允許上傳最大 10MB 的文件（解決 413 錯誤）
+2. **`location /uploads/`**：直接服務上傳的文件，因為 Next.js standalone 模式不會自動服務運行時上傳的文件
+3. **Docker Volume 映射**：`docker-compose.yml` 中已配置 `./public/uploads:/app/public/uploads`，確保文件持久化
 
 ## 專案結構
 
