@@ -202,8 +202,11 @@ export default function VideoManager() {
           {/* 縮圖上傳 */}
           <div className="space-y-2">
             <label className="block text-magic-gold-light font-magic">
-              縮圖（選填，建議尺寸：640x1136）
+              縮圖（選填）
             </label>
+            <p className="text-magic-gold-light/70 text-sm">
+              建議尺寸：640x1136 像素，比例約為 9:16（直式）
+            </p>
             <input
               ref={thumbnailInputRef}
               type="file"
@@ -326,25 +329,30 @@ export default function VideoManager() {
                     className="hidden"
                     disabled={uploadingEditThumbnail === video.id}
                   />
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => editThumbnailInputRefs.current[video.id]?.click()}
-                      disabled={uploadingEditThumbnail === video.id}
-                      className="flex items-center gap-2 bg-magic-purple/50 text-magic-gold-light px-4 py-2 rounded-lg font-magic hover:bg-magic-purple/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {uploadingEditThumbnail === video.id ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-magic-gold-light border-t-transparent rounded-full animate-spin"></div>
-                          上傳中...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          {editData.thumbnail_url !== undefined || video.thumbnail_url ? '更換縮圖' : '選擇縮圖'}
-                        </>
-                      )}
-                    </button>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => editThumbnailInputRefs.current[video.id]?.click()}
+                        disabled={uploadingEditThumbnail === video.id}
+                        className="flex items-center gap-2 bg-magic-purple/50 text-magic-gold-light px-4 py-2 rounded-lg font-magic hover:bg-magic-purple/70 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploadingEditThumbnail === video.id ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-magic-gold-light border-t-transparent rounded-full animate-spin"></div>
+                            上傳中...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            {editData.thumbnail_url !== undefined || video.thumbnail_url ? '更換縮圖' : '選擇縮圖'}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-magic-gold-light/70 text-xs">
+                      建議尺寸：640x1136 像素，比例約為 9:16（直式）
+                    </p>
                     {(editData.thumbnail_url !== undefined ? editData.thumbnail_url : video.thumbnail_url) && (
                       <button
                         type="button"

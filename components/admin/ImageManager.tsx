@@ -147,8 +147,11 @@ export default function ImageManager() {
           />
           <div className="space-y-2">
             <label className="block text-magic-gold-light font-magic">
-              圖片上傳（建議尺寸：1:1 或 4:5）
+              圖片上傳
             </label>
+            <p className="text-magic-gold-light/70 text-sm">
+              建議比例：1:1（正方形）或 4:5（直式）
+            </p>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
