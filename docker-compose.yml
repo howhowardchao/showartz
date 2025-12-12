@@ -30,7 +30,10 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-change-this-secret}
       NODE_ENV: production
     ports:
-      - "80:3000"
+      - "3000:3000"
+    volumes:
+      # 持久化上傳的文件
+      - ./public/uploads:/app/public/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,4 +41,5 @@ services:
 
 volumes:
   postgres_data:
+  # uploads 目錄使用 bind mount，不需要在這裡定義
 
