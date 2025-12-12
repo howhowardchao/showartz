@@ -124,7 +124,7 @@ export async function sendMessage(threadId: string, message: string) {
 
   while (Date.now() - startTime < maxWaitTime) {
     // OpenAI SDK v6: retrieve(threadId, runId)
-    let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id) as any;
+    let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
 
     // Handle function calling
     if (runStatus.status === 'requires_action' && runStatus.required_action?.type === 'submit_tool_outputs') {
@@ -172,10 +172,11 @@ export async function sendMessage(threadId: string, message: string) {
       // Submit tool outputs
       if (toolOutputs.length > 0) {
         try {
-          // OpenAI SDK v6: submitToolOutputs(threadId, runId, params)
-          run = await openai.beta.threads.runs.submitToolOutputs(threadId, run.id, {
+          // OpenAI SDK v6: submitToolOutputs(runId, params) where params includes thread_id
+          run = await openai.beta.threads.runs.submitToolOutputs(run.id, {
+            thread_id: threadId,
             tool_outputs: toolOutputs,
-          }) as any;
+          });
         } catch (error: any) {
           debugError('Error submitting tool outputs:', error);
           throw new Error(`Failed to submit tool outputs: ${error?.message || String(error)}`);
