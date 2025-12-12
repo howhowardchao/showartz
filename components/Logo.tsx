@@ -7,7 +7,7 @@ export default function Logo() {
   // 設定高度，寬度自動按比例調整
   return (
     <div className="flex items-center">
-      <div className="relative h-8 md:h-10 w-auto">
+      <div className="relative h-[34px] md:h-[42px] w-auto">
         <Image
           src="/showartzlogo.png"
           alt="Showartz Logo"
