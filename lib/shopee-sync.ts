@@ -1,10 +1,11 @@
 import { scrapeShopeeStore, ShopeeProduct } from './shopee-scraper';
-import { upsertProductFromShopee, getAllProducts } from './db';
+import { upsertProductFromShopee, getAllProducts, getShopeeProductIds, deactivateShopeeProducts } from './db';
 
 export interface SyncResult {
   success: number;
   failed: number;
   total: number;
+  deactivated?: number; // 已下架的商品數量
   errors?: string[];
 }
 
@@ -37,6 +38,9 @@ export async function syncProductsFromShopee(shopId: number = 62981645): Promise
 
     console.log(`Found ${products.length} products, syncing to database...`);
 
+    // 獲取本次同步的商品 ID 列表
+    const syncedItemIds = products.map(p => p.item_id);
+
     // 將每個商品同步到資料庫
     for (const product of products) {
       try {
@@ -62,6 +66,26 @@ export async function syncProductsFromShopee(shopId: number = 62981645): Promise
         const errorMsg = `Failed to sync product ${product.item_id}: ${error?.message || String(error)}`;
         result.errors?.push(errorMsg);
         console.error(errorMsg);
+      }
+    }
+
+    // 處理已下架的商品：找出資料庫中有但本次同步沒有的商品
+    try {
+      const dbItemIds = await getShopeeProductIds(shopId);
+      const missingItemIds = dbItemIds.filter(id => !syncedItemIds.includes(id));
+      
+      if (missingItemIds.length > 0) {
+        const deactivatedCount = await deactivateShopeeProducts(shopId, missingItemIds);
+        result.deactivated = deactivatedCount;
+        console.log(`Marked ${deactivatedCount} Shopee products as inactive (removed from store)`);
+        if (result.errors) {
+          result.errors.push(`已下架 ${deactivatedCount} 個商品（商店中已移除）`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error deactivating missing products:', error);
+      if (result.errors) {
+        result.errors.push(`處理已下架商品時發生錯誤: ${error?.message || String(error)}`);
       }
     }
 

@@ -584,5 +584,59 @@ export async function deleteProduct(id: string): Promise<boolean> {
   return (result.rowCount ?? 0) > 0;
 }
 
+/**
+ * 獲取指定商店的所有 Shopee 商品 ID
+ */
+export async function getShopeeProductIds(shopId: number): Promise<number[]> {
+  const result = await pool.query(
+    'SELECT shopee_item_id FROM products WHERE shopee_shop_id = $1 AND shopee_item_id IS NOT NULL',
+    [shopId]
+  );
+  return result.rows.map(row => row.shopee_item_id).filter((id): id is number => id !== null);
+}
+
+/**
+ * 獲取指定商店的所有 Pinkoi 商品 ID
+ */
+export async function getPinkoiProductIds(): Promise<string[]> {
+  const result = await pool.query(
+    'SELECT pinkoi_product_id FROM products WHERE pinkoi_product_id IS NOT NULL',
+    []
+  );
+  return result.rows.map(row => row.pinkoi_product_id).filter((id): id is string => id !== null && id !== '');
+}
+
+/**
+ * 標記指定 Shopee 商品為下架
+ */
+export async function deactivateShopeeProducts(shopId: number, itemIds: number[]): Promise<number> {
+  if (itemIds.length === 0) {
+    return 0;
+  }
+  const result = await pool.query(
+    `UPDATE products 
+     SET is_active = false, updated_at = CURRENT_TIMESTAMP 
+     WHERE shopee_shop_id = $1 AND shopee_item_id = ANY($2::bigint[])`,
+    [shopId, itemIds]
+  );
+  return result.rowCount ?? 0;
+}
+
+/**
+ * 標記指定 Pinkoi 商品為下架
+ */
+export async function deactivatePinkoiProducts(productIds: string[]): Promise<number> {
+  if (productIds.length === 0) {
+    return 0;
+  }
+  const result = await pool.query(
+    `UPDATE products 
+     SET is_active = false, updated_at = CURRENT_TIMESTAMP 
+     WHERE pinkoi_product_id = ANY($1::text[])`,
+    [productIds]
+  );
+  return result.rowCount ?? 0;
+}
+
 export default pool;
 

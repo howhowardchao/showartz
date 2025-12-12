@@ -3,12 +3,13 @@
  */
 
 import { scrapePinkoiStore, PinkoiProduct } from './pinkoi-scraper';
-import { upsertProductFromPinkoi } from './db';
+import { upsertProductFromPinkoi, getPinkoiProductIds, deactivatePinkoiProducts } from './db';
 
 export interface SyncResult {
   success: number;
   failed: number;
   total: number;
+  deactivated?: number; // 已下架的商品數量
   errors?: string[];
 }
 
@@ -37,6 +38,9 @@ export async function syncProductsFromPinkoi(storeId: string = 'showartz'): Prom
 
     console.log(`Found ${products.length} products, syncing to database...`);
 
+    // 獲取本次同步的商品 ID 列表
+    const syncedProductIds = products.map(p => p.product_id);
+
     // 將每個商品同步到資料庫
     for (const product of products) {
       try {
@@ -61,6 +65,26 @@ export async function syncProductsFromPinkoi(storeId: string = 'showartz'): Prom
         const errorMsg = `Failed to sync product ${product.product_id}: ${error?.message || String(error)}`;
         result.errors?.push(errorMsg);
         console.error(errorMsg);
+      }
+    }
+
+    // 處理已下架的商品：找出資料庫中有但本次同步沒有的商品
+    try {
+      const dbProductIds = await getPinkoiProductIds();
+      const missingProductIds = dbProductIds.filter(id => !syncedProductIds.includes(id));
+      
+      if (missingProductIds.length > 0) {
+        const deactivatedCount = await deactivatePinkoiProducts(missingProductIds);
+        result.deactivated = deactivatedCount;
+        console.log(`Marked ${deactivatedCount} Pinkoi products as inactive (removed from store)`);
+        if (result.errors) {
+          result.errors.push(`已下架 ${deactivatedCount} 個商品（商店中已移除）`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error deactivating missing products:', error);
+      if (result.errors) {
+        result.errors.push(`處理已下架商品時發生錯誤: ${error?.message || String(error)}`);
       }
     }
 

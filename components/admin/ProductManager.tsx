@@ -65,7 +65,8 @@ export default function ProductManager() {
         if (result.logs) {
           setSyncLogs(result.logs);
         }
-        alert(`同步完成：成功 ${result.success} 個，失敗 ${result.failed} 個，總共找到 ${result.total} 個商品`);
+        const deactivatedMsg = result.deactivated ? `，已下架 ${result.deactivated} 個商品` : '';
+        alert(`同步完成：成功 ${result.success} 個，失敗 ${result.failed} 個，總共找到 ${result.total} 個商品${deactivatedMsg}`);
         await fetchProducts();
       } else {
         const errorData = await response.json().catch(() => ({ error: '未知錯誤' }));
@@ -94,7 +95,8 @@ export default function ProductManager() {
         if (result.logs) {
           setSyncLogs(result.logs);
         }
-        alert(`Pinkoi 同步完成：成功 ${result.success} 個，失敗 ${result.failed} 個，總共找到 ${result.total} 個商品`);
+        const deactivatedMsg = result.deactivated ? `，已下架 ${result.deactivated} 個商品` : '';
+        alert(`Pinkoi 同步完成：成功 ${result.success} 個，失敗 ${result.failed} 個，總共找到 ${result.total} 個商品${deactivatedMsg}`);
         await fetchProducts();
       } else {
         const errorData = await response.json().catch(() => ({ error: '未知錯誤' }));
