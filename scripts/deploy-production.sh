@@ -82,3 +82,4 @@ echo "💡 如果遇到問題，可以執行以下命令查看日誌:"
 echo "   docker-compose logs app --tail=50"
 echo "   docker-compose logs postgres --tail=50"
 
+

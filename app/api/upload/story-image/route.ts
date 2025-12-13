@@ -4,16 +4,6 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { getSession } from '@/lib/auth';
 
-// 配置請求體大小限制（10MB）
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-  runtime: 'nodejs',
-};
-
 // POST - Upload story image (admin only)
 export async function POST(request: NextRequest) {
   try {

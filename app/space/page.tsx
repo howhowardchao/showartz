@@ -56,19 +56,42 @@ export default function SpacePage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {images.map((image) => (
-            <div
-              key={image.id}
-              className="aspect-square bg-magic-purple/20 rounded-lg overflow-hidden border border-magic-purple/30 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:border-magic-gold/50 magic-glow"
-              onClick={() => setSelectedImage(image)}
-            >
-              <img
-                src={image.image_url}
-                alt={image.description || '故事照片'}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ))}
+          {images.map((image) => {
+            // 截取描述的前120字
+            const truncateDescription = (text: string | undefined, maxLength: number = 120) => {
+              if (!text) return '';
+              if (text.length <= maxLength) return text;
+              return text.slice(0, maxLength) + '...';
+            };
+
+            const previewText = truncateDescription(image.description, 120);
+
+            return (
+              <div
+                key={image.id}
+                className="bg-magic-purple/20 rounded-lg overflow-hidden border border-magic-purple/30 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:border-magic-gold/50 magic-glow flex flex-col"
+                onClick={() => setSelectedImage(image)}
+              >
+                {/* 圖片區域 */}
+                <div className="aspect-square bg-magic-dark/50 relative overflow-hidden">
+                  <img
+                    src={image.image_url}
+                    alt={image.description || '故事照片'}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                {/* 文字預覽區域 */}
+                {previewText && (
+                  <div className="p-3 md:p-4 flex-1 flex flex-col justify-start">
+                    <p className="text-magic-gold-light text-xs md:text-sm leading-relaxed line-clamp-4">
+                      {previewText}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

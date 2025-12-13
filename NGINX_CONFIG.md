@@ -36,3 +36,4 @@ sudo systemctl reload nginx  # 重新載入配置
 
 配置完成後，應該可以上傳最大 10MB 的文件。
 
+

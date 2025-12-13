@@ -167,3 +167,4 @@ const pool = new Pool({
 5. ✅ 錯誤處理：大部分地方都有 try-catch
 6. ✅ 類型定義：有完整的 TypeScript 類型定義
 
+

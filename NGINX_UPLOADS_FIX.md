@@ -77,3 +77,4 @@ sudo systemctl reload nginx
 
 配置完成後，上傳的文件應該可以正常訪問了。
 
+
