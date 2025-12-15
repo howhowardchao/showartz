@@ -544,6 +544,25 @@ sudo certbot --nginx -d showartz.com -d www.showartz.com
 2. **`location /uploads/`**：直接服務上傳的文件，因為 Next.js standalone 模式不會自動服務運行時上傳的文件
 3. **Docker Volume 映射**：`docker-compose.yml` 中已配置 `./public/uploads:/app/public/uploads`，確保文件持久化
 
+### 故障排除
+
+#### 502 Bad Gateway 錯誤
+
+如果遇到 502 錯誤，請參考 [DEPLOY_FIX_502.md](./DEPLOY_FIX_502.md) 詳細指南。
+
+**快速修復**：
+```bash
+cd /opt/showartz
+bash scripts/diagnose-502.sh  # 診斷問題
+bash scripts/fix-502.sh       # 自動修復
+```
+
+**常見原因**：
+- Docker 容器未運行或崩潰
+- 應用啟動失敗（檢查日誌：`docker-compose logs app`）
+- 端口衝突或 Nginx 配置錯誤
+- 環境變數缺失或錯誤
+
 ## 部署到 GitHub main（含系統更新注意事項）
 
 > 本節為操作指南，未在此文件中自動執行任何 git 或部署命令。
