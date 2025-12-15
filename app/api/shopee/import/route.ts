@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { upsertProductFromShopee } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 /**
  * 手動批量導入商品
  * 接受商品列表 JSON
@@ -41,9 +44,9 @@ export async function POST(request: NextRequest) {
           rating: product.rating,
         });
         results.success++;
-      } catch (error: any) {
+      } catch (error: unknown) {
         results.failed++;
-        results.errors.push(`商品 ${product.name || product.shopee_item_id}: ${error?.message || String(error)}`);
+        results.errors.push(`商品 ${product.name || product.shopee_item_id}: ${toErrorMessage(error)}`);
       }
     }
 
@@ -51,12 +54,12 @@ export async function POST(request: NextRequest) {
       ...results,
       message: `成功導入 ${results.success} 個商品，失敗 ${results.failed} 個`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error importing products:', error);
     return NextResponse.json(
       { 
         error: 'Failed to import products',
-        details: error?.message || String(error)
+        details: toErrorMessage(error)
       },
       { status: 500 }
     );

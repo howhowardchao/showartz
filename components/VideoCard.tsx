@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Video } from '@/lib/types';
 import { Play } from 'lucide-react';
 import { useState } from 'react';
@@ -13,14 +14,6 @@ export default function VideoCard({ video, onClick }: VideoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Extract Instagram video ID from URL
-  const getVideoId = (url: string) => {
-    const match = url.match(/instagram\.com\/(?:reel|p|tv)\/([A-Za-z0-9_-]+)/);
-    return match ? match[1] : null;
-  };
-
-  const videoId = getVideoId(video.ig_url);
-
   return (
     <div
       className="relative group cursor-pointer transform transition-all duration-300 hover:scale-105"
@@ -31,10 +24,12 @@ export default function VideoCard({ video, onClick }: VideoCardProps) {
       <div className="aspect-[9/16] bg-gradient-to-br from-magic-purple/30 to-magic-blue/30 rounded-lg overflow-hidden border border-magic-purple/30 magic-glow hover:border-magic-gold/50 relative">
         {/* 如果有縮圖，顯示縮圖 */}
         {video.thumbnail_url && !imageError ? (
-          <img
+          <Image
             src={video.thumbnail_url}
             alt={video.title || 'Video thumbnail'}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 60vw, 25vw"
+            className="object-cover"
             onError={() => setImageError(true)}
           />
         ) : (

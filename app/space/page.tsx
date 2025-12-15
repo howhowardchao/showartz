@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Image } from '@/lib/types';
 import ImageModal from '@/components/ImageModal';
@@ -74,10 +75,13 @@ export default function SpacePage() {
               >
                 {/* 圖片區域 */}
                 <div className="aspect-square bg-magic-dark/50 relative overflow-hidden">
-                  <img
+                  <Image
                     src={image.image_url}
                     alt={image.description || '故事照片'}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover"
+                    priority={false}
                   />
                 </div>
                 

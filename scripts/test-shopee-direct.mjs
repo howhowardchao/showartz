@@ -90,11 +90,11 @@ async function test() {
           try {
             const value = eval(varName);
             if (value) data[varName] = 'exists';
-          } catch (e) {
+          } catch {
             // 變數不存在
           }
         }
-      } catch (e) {
+      } catch {
         // 忽略錯誤
       }
       return data;

@@ -29,7 +29,7 @@ async function resetPassword() {
     const passwordHash = await bcrypt.hash(password, 10);
     
     // 更新或創建管理員帳號
-    const result = await pool.query(
+    await pool.query(
       `INSERT INTO admin_users (username, password_hash) 
        VALUES ($1, $2) 
        ON CONFLICT (username) 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllVideos, createVideo, updateVideo, deleteVideo } from '@/lib/db';
+import { getAllVideos, createVideo } from '@/lib/db';
 import { VideoCategory } from '@/lib/types';
 import { getSession } from '@/lib/auth';
 

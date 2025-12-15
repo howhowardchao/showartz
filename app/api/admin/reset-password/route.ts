@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword } from '@/lib/auth';
-import { getAdminUserByUsername } from '@/lib/db';
 import { Pool } from 'pg';
+
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
 
 // 重置管理員密碼的 API（僅用於初始化或緊急情況）
 export async function POST(request: NextRequest) {
@@ -51,12 +53,12 @@ export async function POST(request: NextRequest) {
     } finally {
       await pool.end();
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Reset password error:', error);
     return NextResponse.json(
       {
         error: 'Failed to reset password',
-        details: error?.message || String(error),
+        details: toErrorMessage(error),
       },
       { status: 500 }
     );

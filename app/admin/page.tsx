@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LoginForm from '@/components/admin/LoginForm';
 import VideoManager from '@/components/admin/VideoManager';
@@ -12,11 +13,7 @@ export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/session', {
         credentials: 'include', // 確保發送 cookies
@@ -31,7 +28,11 @@ export default function AdminPage() {
       console.error('Auth check error:', error);
       setAuthenticated(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void checkAuth();
+  }, [checkAuth]);
 
   const handleLogout = async () => {
     try {

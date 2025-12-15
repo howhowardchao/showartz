@@ -544,6 +544,48 @@ sudo certbot --nginx -d showartz.com -d www.showartz.com
 2. **`location /uploads/`**：直接服務上傳的文件，因為 Next.js standalone 模式不會自動服務運行時上傳的文件
 3. **Docker Volume 映射**：`docker-compose.yml` 中已配置 `./public/uploads:/app/public/uploads`，確保文件持久化
 
+## 部署到 GitHub main（含系統更新注意事項）
+
+> 本節為操作指南，未在此文件中自動執行任何 git 或部署命令。
+
+1. **檢查狀態與品質**  
+   ```bash
+   git status
+   npm run lint
+   ```
+
+2. **（可選）更新版本/紀錄**  
+   - 若有版本號或日期變更，請同步更新 `README.md` 或 `DEPLOYMENT_STATUS.md`。
+
+3. **提交並推送到 GitHub main**  
+   ```bash
+   git add .
+   git commit -m "chore: update docs & deploy notes"
+   git push origin main
+   ```
+
+4. **伺服器端拉取 main 並重啟**  
+   ```bash
+   git pull origin main
+   docker compose pull
+   docker compose up -d --build
+   ```
+   - 若伺服器已進行系統套件更新（如 apt/yum），請先重啟 Docker 服務再重建：  
+     ```bash
+     sudo systemctl restart docker
+     docker compose up -d --build
+     ```
+
+5. **驗證部署**  
+   ```bash
+   docker compose ps
+   docker compose logs -f app   # 若服務名稱不同請替換
+   curl -I https://showartz.com
+   ```
+
+6. **（選用）維護模式**  
+   - 若需短暫下線，可在 Nginx 或 CDN 開啟維護頁，部署完成後再恢復。
+
 ## 專案結構
 
 ```

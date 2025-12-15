@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 export default function LoginForm() {
@@ -9,7 +8,6 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +30,7 @@ export default function LoginForm() {
         setError(data.error || '登入失敗');
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError('發生錯誤，請稍後再試');
     } finally {
       setLoading(false);

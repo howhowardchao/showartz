@@ -4,6 +4,77 @@
  */
 
 import { recommendProducts, searchProductsByTags, getAllProducts } from './db';
+import { Product } from './types';
+
+type FunctionName = keyof typeof productFunctions;
+
+type RecommendArgs = {
+  budget?: number;
+  category?: string;
+  tags?: string[];
+  goal?: string;
+  limit?: number;
+};
+
+type SearchByTagsArgs = {
+  tags: string[];
+};
+
+type GetAllProductsArgs = {
+  limit?: number;
+};
+
+type FunctionArgsMap = {
+  recommend_products: RecommendArgs;
+  search_products_by_tags: SearchByTagsArgs;
+  get_all_products: GetAllProductsArgs;
+};
+
+interface FunctionResult {
+  success: boolean;
+  products?: Product[];
+  total?: number;
+  error?: string;
+}
+
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+const parseRecommendArgs = (args: unknown): RecommendArgs => {
+  if (!args || typeof args !== 'object') {
+    return {};
+  }
+  const input = args as Partial<RecommendArgs>;
+  return {
+    budget: typeof input.budget === 'number' ? input.budget : undefined,
+    category: typeof input.category === 'string' ? input.category : undefined,
+    tags: Array.isArray(input.tags) ? input.tags.filter((tag): tag is string => typeof tag === 'string') : undefined,
+    goal: typeof input.goal === 'string' ? input.goal : undefined,
+    limit: typeof input.limit === 'number' ? input.limit : undefined,
+  };
+};
+
+const parseTagsArgs = (args: unknown): SearchByTagsArgs | null => {
+  if (!args || typeof args !== 'object') {
+    return null;
+  }
+  const candidate = (args as { tags?: unknown }).tags;
+  if (!Array.isArray(candidate)) {
+    return null;
+  }
+  const tags = candidate.filter((tag): tag is string => typeof tag === 'string');
+  return tags.length > 0 ? { tags } : null;
+};
+
+const parseGetAllProductsArgs = (args: unknown): GetAllProductsArgs => {
+  if (!args || typeof args !== 'object') {
+    return {};
+  }
+  const input = args as Partial<GetAllProductsArgs>;
+  return {
+    limit: typeof input.limit === 'number' ? input.limit : undefined,
+  };
+};
 
 export const productFunctions = {
   /**
@@ -89,59 +160,102 @@ export const productFunctions = {
 /**
  * 執行 Function Calling
  */
-export async function executeFunction(functionName: string, args: any): Promise<any> {
+export async function executeFunction(
+  functionName: FunctionName,
+  args: FunctionArgsMap[FunctionName] | unknown
+): Promise<FunctionResult> {
   try {
     switch (functionName) {
       case 'recommend_products':
+        {
+        const parsedArgs = parseRecommendArgs(args);
         const products = await recommendProducts({
-          budget: args.budget,
-          category: args.category,
-          tags: args.tags,
-          goal: args.goal,
+          budget: parsedArgs.budget,
+          category: parsedArgs.category,
+          tags: parsedArgs.tags,
+          goal: parsedArgs.goal,
         });
         // 限制返回數量（確保是整數）
-        const limit = Math.floor(args.limit) || 5;
+        const limit = Number.isFinite(parsedArgs.limit) ? Math.floor(parsedArgs.limit as number) : 5;
         return {
           success: true,
           products: products.slice(0, limit).map(p => ({
             id: p.id,
+            shopee_item_id: p.shopee_item_id,
+            shopee_shop_id: p.shopee_shop_id,
             name: p.name,
             price: p.price,
             original_price: p.original_price,
             image_url: p.image_url,
+            image_urls: p.image_urls,
             description: p.description,
             category: p.category,
             tags: p.tags,
-            url: p.pinkoi_url || p.shopee_url,
+            shopee_url: p.shopee_url,
+            pinkoi_url: p.pinkoi_url,
+            stock: p.stock,
             sales_count: p.sales_count,
             rating: p.rating,
+            is_active: p.is_active,
+            last_synced_at: p.last_synced_at,
+            created_at: p.created_at,
+            updated_at: p.updated_at,
           })),
           total: products.length,
         };
-        
+        }
       case 'search_products_by_tags':
-        if (!args.tags || !Array.isArray(args.tags) || args.tags.length === 0) {
+        {
+        const parsed = parseTagsArgs(args);
+        if (!parsed) {
+          console.error('[Function] search_products_by_tags: tags parameter is required');
           return { success: false, error: 'tags parameter is required' };
         }
-        const taggedProducts = await searchProductsByTags(args.tags);
-        return {
-          success: true,
-          products: taggedProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            image_url: p.image_url,
-            category: p.category,
-            tags: p.tags,
-            url: p.pinkoi_url || p.shopee_url,
-          })),
-          total: taggedProducts.length,
-        };
-        
+        console.log('[Function] search_products_by_tags called with tags:', parsed.tags);
+        try {
+          const taggedProducts = await searchProductsByTags(parsed.tags);
+          console.log('[Function] search_products_by_tags found', taggedProducts.length, 'products');
+          return {
+            success: true,
+            products: taggedProducts.map(p => ({
+              id: p.id,
+              shopee_item_id: p.shopee_item_id,
+              shopee_shop_id: p.shopee_shop_id,
+              name: p.name,
+              price: p.price,
+              original_price: p.original_price,
+              image_url: p.image_url,
+              image_urls: p.image_urls,
+              description: p.description,
+              category: p.category,
+              tags: p.tags,
+              shopee_url: p.shopee_url,
+              pinkoi_url: p.pinkoi_url,
+              stock: p.stock,
+              sales_count: p.sales_count,
+              rating: p.rating,
+              is_active: p.is_active,
+              last_synced_at: p.last_synced_at,
+              created_at: p.created_at,
+              updated_at: p.updated_at,
+            })),
+            total: taggedProducts.length,
+          };
+        } catch (error: unknown) {
+          console.error('[Function] search_products_by_tags error:', error);
+          return { 
+            success: false, 
+            error: toErrorMessage(error),
+          };
+        }
+        }
       case 'get_all_products':
+        {
+        const parsed = parseGetAllProductsArgs(args);
+        const limit = Number.isFinite(parsed.limit) ? Math.floor(parsed.limit as number) : 20;
         const allProducts = await getAllProducts({ 
           isActive: true,
-          limit: Math.floor(args.limit) || 20,
+          limit,
         });
         return {
           success: true,
@@ -154,13 +268,13 @@ export async function executeFunction(functionName: string, args: any): Promise<
           })),
           total: allProducts.length,
         };
-        
+        }
       default:
         return { success: false, error: `Unknown function: ${functionName}` };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error executing function ${functionName}:`, error);
-    return { success: false, error: error?.message || String(error) };
+    return { success: false, error: toErrorMessage(error) };
   }
 }
 

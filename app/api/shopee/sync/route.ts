@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { syncProductsFromShopee, getSyncStatus } from '@/lib/shopee-sync';
 import { getSession } from '@/lib/auth';
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 // POST - Manual sync trigger (admin only)
 export async function POST(request: NextRequest) {
   try {
@@ -24,17 +27,17 @@ export async function POST(request: NextRequest) {
     const originalWarn = console.warn;
     
     // 暫時攔截 console 輸出以收集日誌
-    console.log = (...args: any[]) => {
+    console.log = (...args: unknown[]) => {
       const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
       logs.push(`[LOG] ${msg}`);
       originalLog(...args);
     };
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
       logs.push(`[ERROR] ${msg}`);
       originalError(...args);
     };
-    console.warn = (...args: any[]) => {
+    console.warn = (...args: unknown[]) => {
       const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
       logs.push(`[WARN] ${msg}`);
       originalWarn(...args);
@@ -56,19 +59,19 @@ export async function POST(request: NextRequest) {
           : `成功同步 ${result.success} 個商品`,
         logs: logs.slice(-50), // 返回最後 50 條日誌
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 恢復原始 console
       console.log = originalLog;
       console.error = originalError;
       console.warn = originalWarn;
       throw error;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error syncing products:', error);
     return NextResponse.json(
       { 
         error: 'Failed to sync products',
-        details: error?.message || String(error)
+        details: toErrorMessage(error)
       },
       { status: 500 }
     );
@@ -80,7 +83,7 @@ export async function GET() {
   try {
     const status = await getSyncStatus();
     return NextResponse.json(status);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting sync status:', error);
     return NextResponse.json(
       { error: 'Failed to get sync status' },

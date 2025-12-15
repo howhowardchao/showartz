@@ -1,4 +1,4 @@
-import { scrapeShopeeStore, ShopeeProduct } from './shopee-scraper';
+import { scrapeShopeeStore } from './shopee-scraper';
 import { upsertProductFromShopee, getAllProducts, getShopeeProductIds, deactivateShopeeProducts } from './db';
 
 export interface SyncResult {
@@ -8,6 +8,9 @@ export interface SyncResult {
   deactivated?: number; // 已下架的商品數量
   errors?: string[];
 }
+
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
 
 // 定時同步任務
 let syncInterval: NodeJS.Timeout | null = null;
@@ -61,9 +64,9 @@ export async function syncProductsFromShopee(shopId: number = 62981645): Promise
           rating: product.rating,
         });
         result.success++;
-      } catch (error: any) {
+      } catch (error: unknown) {
         result.failed++;
-        const errorMsg = `Failed to sync product ${product.item_id}: ${error?.message || String(error)}`;
+        const errorMsg = `Failed to sync product ${product.item_id}: ${toErrorMessage(error)}`;
         result.errors?.push(errorMsg);
         console.error(errorMsg);
       }
@@ -82,18 +85,18 @@ export async function syncProductsFromShopee(shopId: number = 62981645): Promise
           result.errors.push(`已下架 ${deactivatedCount} 個商品（商店中已移除）`);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deactivating missing products:', error);
       if (result.errors) {
-        result.errors.push(`處理已下架商品時發生錯誤: ${error?.message || String(error)}`);
+        result.errors.push(`處理已下架商品時發生錯誤: ${toErrorMessage(error)}`);
       }
     }
 
     console.log(`Sync completed: ${result.success} success, ${result.failed} failed`);
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error syncing products from Shopee:', error);
-    result.errors?.push(`Sync failed: ${error?.message || String(error)}`);
+    result.errors?.push(`Sync failed: ${toErrorMessage(error)}`);
     return result;
   }
 }

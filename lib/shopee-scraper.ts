@@ -15,6 +15,9 @@ export interface ShopeeProduct {
   category?: string;
 }
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 /**
  * 嘗試直接呼叫蝦皮內部 API 獲取商品列表
  * 這需要分析實際的網路請求來找到正確的 API 端點
@@ -50,8 +53,8 @@ export async function fetchShopeeProductsAPI(shopId: number): Promise<ShopeeProd
         if (products.length > 0) {
           return products;
         }
-      } catch (error: any) {
-        console.log(`[API Method] Endpoint failed: ${error?.message || String(error)}`);
+      } catch (error: unknown) {
+        console.log(`[API Method] Endpoint failed: ${toErrorMessage(error)}`);
         // 繼續嘗試下一個端點
         continue;
       }
@@ -136,7 +139,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
               // 記錄回應結構以便調試
               console.log(`[Puppeteer] API response structure:`, JSON.stringify(data).substring(0, 500));
             }
-          } catch (e) {
+          } catch {
             // 忽略非 JSON 回應
             console.log(`[Puppeteer] Response is not JSON: ${url}`);
           }
@@ -173,7 +176,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
           { timeout: 30000, polling: 1000 }
         );
         console.log('[Puppeteer] Product elements found');
-      } catch (e) {
+      } catch {
         console.log('[Puppeteer] Product elements not found after waiting, will try to extract anyway...');
         // 再等待一下讓頁面完全載入
         await new Promise(resolve => setTimeout(resolve, 8000));
@@ -240,13 +243,13 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
       if (products.length === 0) {
         console.log('No products from API, trying DOM extraction...');
         const domProducts = await page.evaluate((shopId) => {
-          const items: any[] = [];
+          const items: Array<Record<string, unknown>> = [];
           console.log('[DOM Extract] Starting extraction...');
           
           // 先檢查頁面上實際有多少元素
-          const allLinks = document.querySelectorAll('a[href]');
-          const productLinks = document.querySelectorAll('a[href*="/product/"]');
-          const allImages = document.querySelectorAll('img');
+          const allLinks = document.querySelectorAll<HTMLAnchorElement>('a[href]');
+          const productLinks = document.querySelectorAll<HTMLAnchorElement>('a[href*="/product/"]');
+          const allImages = document.querySelectorAll<HTMLImageElement>('img');
           console.log(`[DOM Extract] Page stats: ${allLinks.length} links, ${productLinks.length} product links, ${allImages.length} images`);
           
           // 方法 1: 查找包含商品資訊的 script 標籤（更廣泛的搜尋）
@@ -288,12 +291,12 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                         items.push(...data.shop.items);
                         console.log(`[DOM Extract] Found ${data.shop.items.length} items in shop.items`);
                       }
-                    } catch (parseError) {
+                    } catch {
                       // 繼續嘗試下一個模式
                     }
                   }
                 }
-              } catch (e) {
+              } catch {
                 // 繼續嘗試其他方法
               }
             }
@@ -333,7 +336,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
               if (allLinks.length === 0) {
                 const allAnchors = document.querySelectorAll('a[href]');
                 console.log(`[DOM Extract] Checking ${allAnchors.length} total links...`);
-                const filteredLinks = Array.from(allAnchors).filter((link: any) => {
+                const filteredLinks = Array.from(allAnchors).filter((link) => {
                   const href = link.getAttribute('href') || link.href || '';
                   const isProduct = href.includes('product') || href.match(/\/\d+\/\d+/) || href.match(/\/i\.\d+\/\d+/);
                   if (isProduct) {
@@ -346,7 +349,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                 
                 // 如果還是沒有，嘗試查找所有包含數字的連結（可能是商品 ID）
                 if (allLinks.length === 0) {
-                  const numericLinks = Array.from(allAnchors).filter((link: any) => {
+                  const numericLinks = Array.from(allAnchors).filter((link) => {
                     const href = link.getAttribute('href') || link.href || '';
                     return /\/\d+\/\d+/.test(href) && href.includes(shopId.toString());
                   });
@@ -355,7 +358,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                 }
               }
               
-              allLinks.forEach((link: any) => {
+              allLinks.forEach((link) => {
                 try {
                   const href = link.getAttribute('href') || link.href || '';
                   // 嘗試多種 URL 格式
@@ -436,7 +439,7 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
               });
             } else {
               // 使用找到的商品卡片
-              productCards.forEach((card: any) => {
+              productCards.forEach((card) => {
                 try {
                   const link = card.querySelector('a[href*="/product/"]') || card.closest('a[href*="/product/"]') || card;
                   const href = link.getAttribute('href') || link.href;
@@ -565,8 +568,8 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                 url: `https://shopee.tw/product/${shopId}/${itemId}`,
               });
             }
-          } catch (e) {
-            console.log(`[Puppeteer] Error extracting from HTML: ${e}`);
+          } catch {
+            console.log('[Puppeteer] Error extracting from HTML');
           }
         }
         
@@ -599,12 +602,12 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                   products.push(...apiProducts);
                   break;
                 }
-              } catch (e) {
-                console.log(`[Puppeteer] Direct API call failed: ${e}`);
+              } catch {
+                console.log('[Puppeteer] Direct API call failed');
               }
             }
-          } catch (e) {
-            console.log(`[Puppeteer] Error in direct API calls: ${e}`);
+          } catch {
+            console.log('[Puppeteer] Error in direct API calls');
           }
         }
         
@@ -636,8 +639,8 @@ export async function scrapeShopeeStore(shopId: number = 62981645): Promise<Shop
     try {
       products = await scrapeShopeeProductsPuppeteer(shopId);
       console.log(`[Shopee Scraper] Puppeteer method returned ${products.length} products`);
-    } catch (error: any) {
-      console.error('[Shopee Scraper] Puppeteer error:', error?.message || String(error));
+    } catch (error: unknown) {
+      console.error('[Shopee Scraper] Puppeteer error:', toErrorMessage(error));
     }
   }
 
@@ -649,38 +652,44 @@ export async function scrapeShopeeStore(shopId: number = 62981645): Promise<Shop
  * 解析蝦皮 API 回應資料
  * 需要根據實際的 API 回應格式調整
  */
-function parseShopeeResponse(data: any): ShopeeProduct[] {
+function parseShopeeResponse(data: unknown): ShopeeProduct[] {
   const products: ShopeeProduct[] = [];
 
   try {
     // 嘗試多種可能的資料結構
-    let items: any[] = [];
+    let items: unknown[] = [];
 
-    if (data.data?.items) {
-      items = data.data.items;
-    } else if (data.items) {
-      items = data.items;
+    if ((data as { data?: { items?: unknown[] } }).data?.items) {
+      items = (data as { data: { items: unknown[] } }).data.items;
+    } else if ((data as { items?: unknown[] }).items) {
+      items = (data as { items: unknown[] }).items;
     } else if (Array.isArray(data)) {
-      items = data;
-    } else if (data.data && Array.isArray(data.data)) {
-      items = data.data;
+      items = data as unknown[];
+    } else if ((data as { data?: unknown }).data && Array.isArray((data as { data: unknown }).data)) {
+      items = (data as { data: unknown[] }).data;
     }
 
-    for (const item of items) {
+    for (const rawItem of items) {
       try {
+        const item = rawItem as Record<string, unknown>;
         const product: ShopeeProduct = {
-          item_id: item.itemid || item.item_id || item.id || 0,
-          shop_id: item.shopid || item.shop_id || 62981645,
-          name: item.name || item.item_name || item.title || '',
-          description: item.description || item.desc || undefined,
-          price: parseFloat(item.price || item.price_min || item.price_max || '0') / 100000, // 蝦皮價格通常是分，需要除以 100000
-          original_price: item.original_price ? parseFloat(item.original_price) / 100000 : undefined,
-          images: item.images || item.image || item.images_list || [],
-          url: item.url || item.item_url || `https://shopee.tw/product/${item.shopid || 62981645}/${item.itemid || item.item_id || item.id}`,
-          stock: item.stock || item.quantity || undefined,
-          sales_count: item.sold || item.sold_count || item.historical_sold || undefined,
-          rating: item.rating || item.rating_star || undefined,
-          category: item.category_name || item.category || undefined,
+          item_id: (item.itemid as number) || (item.item_id as number) || (item.id as number) || 0,
+          shop_id: (item.shopid as number) || (item.shop_id as number) || 62981645,
+          name: (item.name as string) || (item.item_name as string) || (item.title as string) || '',
+          description: (item.description as string) || (item.desc as string) || undefined,
+          price: parseFloat(
+            ((item.price as string) ||
+             (item.price_min as string) ||
+             (item.price_max as string) ||
+             '0').toString()
+          ) / 100000, // 蝦皮價格通常是分，需要除以 100000
+          original_price: item.original_price ? parseFloat(String(item.original_price)) / 100000 : undefined,
+          images: (item.images as string[]) || (item.image as string[]) || (item.images_list as string[]) || [],
+          url: (item.url as string) || (item.item_url as string) || `https://shopee.tw/product/${(item.shopid as number) || 62981645}/${(item.itemid as number) || (item.item_id as number) || (item.id as number)}`,
+          stock: (item.stock as number) || (item.quantity as number) || undefined,
+          sales_count: (item.sold as number) || (item.sold_count as number) || (item.historical_sold as number) || undefined,
+          rating: (item.rating as number) || (item.rating_star as number) || undefined,
+          category: (item.category_name as string) || (item.category as string) || undefined,
         };
 
         // 驗證必要欄位
@@ -699,25 +708,4 @@ function parseShopeeResponse(data: any): ShopeeProduct[] {
   return products;
 }
 
-/**
- * 自動滾動頁面以載入更多商品
- */
-async function autoScroll(page: any) {
-  await page.evaluate(async () => {
-    await new Promise<void>((resolve) => {
-      let totalHeight = 0;
-      const distance = 100;
-      const timer = setInterval(() => {
-        const scrollHeight = document.body.scrollHeight;
-        window.scrollBy(0, distance);
-        totalHeight += distance;
-
-        if (totalHeight >= scrollHeight) {
-          clearInterval(timer);
-          resolve();
-        }
-      }, 100);
-    });
-  });
-}
 

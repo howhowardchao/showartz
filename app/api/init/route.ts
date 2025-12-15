@@ -3,7 +3,7 @@ import { initDatabase } from '@/lib/db';
 import { createAdminUser } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     // Initialize database schema
     await initDatabase();
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       await createAdminUser(username, passwordHash);
     } catch (error) {
       // User might already exist, that's okay
-      console.log('Admin user might already exist');
+      console.log('Admin user might already exist', error);
     }
 
     return NextResponse.json({ 

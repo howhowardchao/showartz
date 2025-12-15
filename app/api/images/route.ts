@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllImages, createImage, deleteImage } from '@/lib/db';
+import { getAllImages, createImage } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
 // GET - Get all images

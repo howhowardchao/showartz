@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,16 +20,21 @@ export default function Navigation() {
 
   // 當路由改變時關閉選單
   useEffect(() => {
-    setIsMenuOpen(false);
-  }, [pathname]);
+    if (isMenuOpen) {
+      setIsMenuOpen(false);
+    }
+  }, [isMenuOpen, pathname]);
 
   // 當選單打開時禁止背景滾動
   useEffect(() => {
     if (isMenuOpen) {
+      const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+      return () => {
+        document.body.style.overflow = previousOverflow || 'unset';
+      };
     }
+    document.body.style.overflow = 'unset';
     return () => {
       document.body.style.overflow = 'unset';
     };

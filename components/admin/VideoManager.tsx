@@ -1,5 +1,6 @@
 'use client';
 
+import NextImage from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { Video, VideoCategory } from '@/lib/types';
 import { Trash2, Plus, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
@@ -251,11 +252,13 @@ export default function VideoManager() {
               )}
             </div>
             {newVideo.thumbnail_url && (
-              <div className="w-32 h-56 rounded overflow-hidden border border-magic-purple/30 bg-magic-dark">
-                <img
+              <div className="relative w-32 h-56 rounded overflow-hidden border border-magic-purple/30 bg-magic-dark">
+                <NextImage
                   src={newVideo.thumbnail_url}
                   alt="縮圖預覽"
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="160px"
+                  className="object-cover"
                 />
               </div>
             )}
@@ -364,11 +367,13 @@ export default function VideoManager() {
                     )}
                   </div>
                   {(editData.thumbnail_url !== undefined ? editData.thumbnail_url : video.thumbnail_url) && (
-                    <div className="w-32 h-56 rounded overflow-hidden border border-magic-purple/30 bg-magic-dark">
-                      <img
+                    <div className="relative w-32 h-56 rounded overflow-hidden border border-magic-purple/30 bg-magic-dark">
+                      <NextImage
                         src={editData.thumbnail_url !== undefined ? editData.thumbnail_url : video.thumbnail_url}
                         alt="縮圖預覽"
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="160px"
+                        className="object-cover"
                       />
                     </div>
                   )}
@@ -414,11 +419,13 @@ export default function VideoManager() {
                       <p className="text-magic-gold-light mt-1">{video.title}</p>
                     )}
                     {video.thumbnail_url && (
-                      <div className="mt-2 w-24 h-40 rounded overflow-hidden border border-magic-purple/30">
-                        <img
+                      <div className="relative mt-2 w-24 h-40 rounded overflow-hidden border border-magic-purple/30">
+                        <NextImage
                           src={video.thumbnail_url}
                           alt="縮圖"
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="120px"
+                          className="object-cover"
                         />
                       </div>
                     )}

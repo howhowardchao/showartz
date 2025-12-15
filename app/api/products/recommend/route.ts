@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recommendProducts } from '@/lib/db';
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 // POST - Recommend products based on criteria
 export async function POST(request: NextRequest) {
   try {
@@ -15,12 +18,12 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(products);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error recommending products:', error);
     return NextResponse.json(
       { 
         error: 'Failed to recommend products',
-        details: error?.message || String(error)
+        details: toErrorMessage(error)
       },
       { status: 500 }
     );

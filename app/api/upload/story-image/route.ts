@@ -4,6 +4,9 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { getSession } from '@/lib/auth';
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 // POST - Upload story image (admin only)
 export async function POST(request: NextRequest) {
   try {
@@ -64,10 +67,10 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error uploading story image:', error);
     return NextResponse.json(
-      { error: 'Failed to upload story image', details: error?.message },
+      { error: 'Failed to upload story image', details: toErrorMessage(error) },
       { status: 500 }
     );
   }

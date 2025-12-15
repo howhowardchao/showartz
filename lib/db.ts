@@ -137,7 +137,7 @@ export async function initDatabase() {
 // Video operations
 export async function getAllVideos(category?: VideoCategory): Promise<Video[]> {
   let query = 'SELECT * FROM videos';
-  const params: any[] = [];
+  const params: (VideoCategory)[] = [];
 
   if (category) {
     query += ' WHERE category = $1';
@@ -182,7 +182,7 @@ export async function updateVideo(
   updates: Partial<Pick<Video, 'ig_url' | 'title' | 'thumbnail_url' | 'category' | 'display_order'>>
 ): Promise<Video> {
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: (string | number | VideoCategory | null)[] = [];
   let paramIndex = 1;
 
   if (updates.ig_url !== undefined) {
@@ -278,7 +278,7 @@ export async function getAllProducts(filters?: {
   offset?: number;
 }): Promise<Product[]> {
   let query = 'SELECT * FROM products WHERE 1=1';
-  const params: any[] = [];
+  const params: (string | number | boolean | string[] | number[] | null)[] = [];
   let paramIndex = 1;
 
   if (filters?.isActive !== undefined) {
@@ -455,11 +455,18 @@ export async function searchProductsByTags(tags: string[]): Promise<Product[]> {
   if (tags.length === 0) {
     return getAllProducts();
   }
-  const result = await pool.query(
-    'SELECT * FROM products WHERE tags && $1 AND is_active = true ORDER BY sales_count DESC',
-    [tags]
-  );
-  return result.rows;
+  try {
+    console.log('[DB] searchProductsByTags called with tags:', tags);
+    const result = await pool.query(
+      'SELECT * FROM products WHERE tags && $1 AND is_active = true ORDER BY sales_count DESC',
+      [tags]
+    );
+    console.log('[DB] searchProductsByTags found', result.rows.length, 'products');
+    return result.rows;
+  } catch (error: unknown) {
+    console.error('[DB] Error in searchProductsByTags:', error);
+    throw error;
+  }
 }
 
 export async function recommendProducts(criteria: {
@@ -520,7 +527,7 @@ export async function updateProduct(
   updates: Partial<Pick<Product, 'name' | 'description' | 'price' | 'original_price' | 'image_url' | 'image_urls' | 'shopee_url' | 'category' | 'tags' | 'stock' | 'sales_count' | 'rating' | 'is_active'>>
 ): Promise<Product> {
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: (string | number | boolean | string[] | number[] | null)[] = [];
   let paramIndex = 1;
 
   if (updates.name !== undefined) {

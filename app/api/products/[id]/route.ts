@@ -3,10 +3,13 @@ import { getProductById, updateProduct, deleteProduct } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
 interface RouteParams {
-  params: Promise<{
+  params: {
     id: string;
-  }>;
+  };
 }
+
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
 
 // GET - Get single product
 export async function GET(
@@ -14,7 +17,7 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const product = await getProductById(id);
     
     if (!product) {
@@ -39,15 +42,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const body = await request.json();
     const product = await updateProduct(id, body);
 
     return NextResponse.json(product);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating product:', error);
     return NextResponse.json(
-      { error: 'Failed to update product', details: error?.message },
+      { error: 'Failed to update product', details: toErrorMessage(error) },
       { status: 500 }
     );
   }
@@ -64,7 +67,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     console.log('[Delete Product] Attempting to delete product:', id);
     
     const success = await deleteProduct(id);
@@ -76,10 +79,10 @@ export async function DELETE(
 
     console.log('[Delete Product] Successfully deleted product:', id);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Delete Product] Error deleting product:', error);
     return NextResponse.json(
-      { error: 'Failed to delete product', details: error?.message },
+      { error: 'Failed to delete product', details: toErrorMessage(error) },
       { status: 500 }
     );
   }

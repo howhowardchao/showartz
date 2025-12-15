@@ -4,13 +4,24 @@ import { Product } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import ProductCard from './ProductCard';
 
-export default function ProductGrid() {
+interface ProductGridProps {
+  recommendedProducts?: Product[];
+}
+
+export default function ProductGrid({ recommendedProducts }: ProductGridProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    // 如果有推薦的商品，直接使用；否則從 API 獲取所有商品
+    if (recommendedProducts && recommendedProducts.length > 0) {
+      setProducts(recommendedProducts);
+      setLoading(false);
+      console.log('[ProductGrid] Using recommended products:', recommendedProducts.length);
+    } else {
+      fetchProducts();
+    }
+  }, [recommendedProducts]);
 
   const fetchProducts = async () => {
     try {

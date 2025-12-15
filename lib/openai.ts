@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { Product } from './types';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -27,13 +28,16 @@ const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID || '';
  */
 
 // Debug logging helper - only log in development
-const debugLog = (...args: any[]) => {
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+const debugLog = (...args: unknown[]) => {
   if (process.env.NODE_ENV === 'development') {
     console.log(...args);
   }
 };
 
-const debugError = (...args: any[]) => {
+const debugError = (...args: unknown[]) => {
   // Always log errors, but with less detail in production
   if (process.env.NODE_ENV === 'development') {
     console.error(...args);
@@ -64,14 +68,17 @@ export async function createThread() {
       throw new Error('Failed to create thread: no ID returned');
     }
     return thread.id;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating thread:', error);
-    throw new Error(`Failed to create thread: ${error?.message || String(error)}`);
+    throw new Error(`Failed to create thread: ${toErrorMessage(error)}`);
   }
 }
 
 // Send message and get response with Function Calling support
-export async function sendMessage(threadId: string, message: string) {
+export async function sendMessage(threadId: string, message: string): Promise<{
+  response: string;
+  recommendedProducts?: Product[];
+}> {
   debugLog('[OpenAI] sendMessage called:', { threadId, messageLength: message.length });
   
   if (!threadId) {
@@ -88,6 +95,9 @@ export async function sendMessage(threadId: string, message: string) {
     throw new Error('OpenAI API key is not configured');
   }
 
+  // 存儲 Function Calling 返回的推薦商品
+  let recommendedProducts: Product[] = [];
+
   // Add message to thread
   try {
     debugLog('[OpenAI] Creating message in thread...');
@@ -96,9 +106,9 @@ export async function sendMessage(threadId: string, message: string) {
       content: message,
     });
     debugLog('[OpenAI] Message created successfully');
-  } catch (error: any) {
+  } catch (error: unknown) {
     debugError('[OpenAI] Error creating message:', error);
-    throw new Error(`Failed to create message: ${error?.message || String(error)}`);
+    throw new Error(`Failed to create message: ${toErrorMessage(error)}`);
   }
 
   // Run assistant
@@ -109,9 +119,9 @@ export async function sendMessage(threadId: string, message: string) {
       assistant_id: ASSISTANT_ID,
     });
     debugLog('[OpenAI] Run created:', run.id, 'Status:', run.status);
-  } catch (error: any) {
+  } catch (error: unknown) {
     debugError('[OpenAI] Error creating run:', error);
-    throw new Error(`Failed to create run: ${error?.message || String(error)}`);
+    throw new Error(`Failed to create run: ${toErrorMessage(error)}`);
   }
 
   if (!run || !run.id) {
@@ -119,17 +129,27 @@ export async function sendMessage(threadId: string, message: string) {
   }
 
   // Poll for completion and handle function calls
-  const maxWaitTime = 120000; // 120 seconds (增加時間以處理 Function Calling)
+  const maxWaitTime = 180000; // 180 seconds (增加時間以處理多次 Function Calling)
   const startTime = Date.now();
+  let pollCount = 0;
 
   while (Date.now() - startTime < maxWaitTime) {
+    pollCount++;
     // OpenAI SDK v6: retrieve(runId, params) where params includes thread_id
-    let runStatus = await openai.beta.threads.runs.retrieve(run.id, {
-      thread_id: threadId,
-    });
+    let runStatus;
+    try {
+      runStatus = await openai.beta.threads.runs.retrieve(run.id, {
+        thread_id: threadId,
+      });
+      debugLog(`[OpenAI] Poll ${pollCount}: Status = ${runStatus.status}`);
+    } catch (error: unknown) {
+      debugError('[OpenAI] Error retrieving run status:', error);
+      throw new Error(`Failed to retrieve run status: ${toErrorMessage(error)}`);
+    }
 
     // Handle function calling
     if (runStatus.status === 'requires_action' && runStatus.required_action?.type === 'submit_tool_outputs') {
+      debugLog('[OpenAI] Function calling required, processing tool calls...');
       const toolCalls = runStatus.required_action.submit_tool_outputs.tool_calls;
       const toolOutputs = [];
 
@@ -151,20 +171,34 @@ export async function sendMessage(threadId: string, message: string) {
 
           // Execute function
           try {
+            debugLog(`[OpenAI] Executing function: ${functionName}`, functionArgs);
             const { executeFunction } = await import('./openai-functions');
             const result = await executeFunction(functionName, functionArgs);
+            debugLog(`[OpenAI] Function ${functionName} result:`, { 
+              success: result.success, 
+              productCount: result.products?.length || 0 
+            });
+            
+            // 如果是商品相關函數且執行成功，保存商品列表
+            if ((functionName === 'recommend_products' || functionName === 'search_products_by_tags') 
+                && result.success && result.products) {
+              recommendedProducts = result.products;
+              debugLog(`[OpenAI] Extracted products from ${functionName}:`, recommendedProducts.length);
+            }
             
             toolOutputs.push({
               tool_call_id: toolCall.id,
               output: JSON.stringify(result),
             });
-          } catch (error: any) {
-            debugError(`Error executing function ${functionName}:`, error);
+          } catch (error: unknown) {
+            debugError(`[OpenAI] Error executing function ${functionName}:`, error);
+            debugError(`[OpenAI] Function arguments:`, functionArgs);
+            debugError(`[OpenAI] Error stack:`, error?.stack);
             toolOutputs.push({
               tool_call_id: toolCall.id,
               output: JSON.stringify({ 
                 success: false, 
-                error: error?.message || String(error) 
+                error: toErrorMessage(error),
               }),
             });
           }
@@ -174,17 +208,23 @@ export async function sendMessage(threadId: string, message: string) {
       // Submit tool outputs
       if (toolOutputs.length > 0) {
         try {
+          debugLog(`[OpenAI] Submitting ${toolOutputs.length} tool outputs...`);
           // OpenAI SDK v6: submitToolOutputs(runId, params) where params includes thread_id
           run = await openai.beta.threads.runs.submitToolOutputs(run.id, {
             thread_id: threadId,
             tool_outputs: toolOutputs,
           });
-        } catch (error: any) {
+          debugLog('[OpenAI] Tool outputs submitted, waiting for next status...');
+        } catch (error: unknown) {
           debugError('Error submitting tool outputs:', error);
-          throw new Error(`Failed to submit tool outputs: ${error?.message || String(error)}`);
+          throw new Error(`Failed to submit tool outputs: ${toErrorMessage(error)}`);
         }
+      } else {
+        debugError('[OpenAI] No tool outputs to submit, but requires_action status');
       }
       
+      // Wait a bit before checking status again after submitting tool outputs
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       continue;
     }
 
@@ -198,7 +238,11 @@ export async function sendMessage(threadId: string, message: string) {
         // Handle different content types
         for (const content of latestMessage.content) {
           if (content.type === 'text') {
-            return content.text.value;
+            const responseText = content.text.value;
+            return {
+              response: responseText,
+              recommendedProducts: recommendedProducts.length > 0 ? recommendedProducts : undefined,
+            };
           }
         }
       }
@@ -222,10 +266,20 @@ export async function sendMessage(threadId: string, message: string) {
       throw new Error(`Run ${runStatus.status}`);
     }
 
-    // Wait before next poll
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Handle other statuses (queued, in_progress)
+    if (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
+      debugLog(`[OpenAI] Run is ${runStatus.status}, waiting...`);
+      // Wait before next poll
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      continue;
+    }
+
+    // Unknown status
+    debugError('[OpenAI] Unknown run status:', runStatus.status);
+    throw new Error(`Unknown run status: ${runStatus.status}`);
   }
 
+  debugError(`[OpenAI] Run timed out after ${maxWaitTime}ms (${pollCount} polls)`);
   throw new Error(`Run timed out after ${maxWaitTime}ms`);
 }
 

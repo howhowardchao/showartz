@@ -1,5 +1,6 @@
 'use client';
 
+import NextImage from 'next/image';
 import { useState, useEffect } from 'react';
 import { Product } from '@/lib/types';
 import { Trash2, Plus, Save, X, RefreshCw } from 'lucide-react';
@@ -49,36 +50,6 @@ export default function ProductManager() {
 
   const [syncLogs, setSyncLogs] = useState<string[]>([]);
   const [showLogs, setShowLogs] = useState(false);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    setSyncLogs([]);
-    setShowLogs(true);
-    try {
-      const response = await fetch('/api/shopee/sync', {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.logs) {
-          setSyncLogs(result.logs);
-        }
-        const deactivatedMsg = result.deactivated ? `，已下架 ${result.deactivated} 個商品` : '';
-        alert(`同步完成：成功 ${result.success} 個，失敗 ${result.failed} 個，總共找到 ${result.total} 個商品${deactivatedMsg}`);
-        await fetchProducts();
-      } else {
-        const errorData = await response.json().catch(() => ({ error: '未知錯誤' }));
-        alert(`同步失敗: ${errorData.error || '請檢查網路連線'}`);
-      }
-    } catch (error) {
-      console.error('Error syncing products:', error);
-      alert('發生錯誤');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const handlePinkoiSync = async () => {
     setSyncing(true);
@@ -208,9 +179,10 @@ export default function ProductManager() {
         console.error('[ProductManager] Delete failed:', errorData);
         alert(`刪除失敗: ${errorData.error || errorData.details || '請檢查後端日誌'}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ProductManager] Error deleting product:', error);
-      alert(`發生錯誤: ${error?.message || '請檢查後端日誌'}`);
+      const message = error instanceof Error ? error.message : '請檢查後端日誌';
+      alert(`發生錯誤: ${message}`);
     }
   };
 
@@ -409,11 +381,15 @@ export default function ProductManager() {
               <tr key={product.id} className="border-b border-magic-purple/10">
                 <td className="p-3">
                   {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
+                    <div className="relative w-16 h-16 rounded overflow-hidden">
+                      <NextImage
+                        src={product.image_url}
+                        alt={product.name}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="w-16 h-16 bg-magic-purple/20 rounded flex items-center justify-center">
                       <span className="text-xs text-magic-gold-light">無圖</span>

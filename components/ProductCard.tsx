@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Product } from '@/lib/types';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
@@ -38,10 +39,12 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* 商品圖片 */}
         <div className="aspect-square bg-magic-dark/50 relative">
           {product.image_url && !imageError ? (
-            <img
+            <Image
               src={product.image_url}
               alt={product.name}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 768px) 50vw, 25vw"
+              className="object-cover"
               onError={() => setImageError(true)}
             />
           ) : (

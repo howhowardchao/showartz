@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllProducts, createProduct } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 // GET - Get all products (optional filters)
 export async function GET(request: NextRequest) {
   try {
@@ -81,10 +84,10 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(product, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating product:', error);
     return NextResponse.json(
-      { error: 'Failed to create product', details: error?.message },
+      { error: 'Failed to create product', details: toErrorMessage(error) },
       { status: 500 }
     );
   }

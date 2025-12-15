@@ -17,7 +17,7 @@ export async function fetchShopeeProductsViaOpenAPI(
   shopId: number,
   apiKey?: string,
   partnerId?: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[]> {
   if (!apiKey || !partnerId) {
     console.log('[Open API] API credentials not provided');
     return [];
@@ -39,7 +39,7 @@ export async function fetchShopeeProductsViaOpenAPI(
     });
 
     return response.data?.response?.item || [];
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[Open API] Error:', error);
     return [];
   }
@@ -49,8 +49,8 @@ export async function fetchShopeeProductsViaOpenAPI(
  * 方案 2: 從商品頁面 URL 列表手動提取
  * 如果知道商品 ID 列表，可以直接訪問商品頁面
  */
-export async function fetchProductDetailsFromURLs(urls: string[]): Promise<any[]> {
-  const products = [];
+export async function fetchProductDetailsFromURLs(urls: string[]): Promise<Record<string, unknown>[]> {
+  const products: Record<string, unknown>[] = [];
   
   for (const url of urls) {
     try {
@@ -61,7 +61,7 @@ export async function fetchProductDetailsFromURLs(urls: string[]): Promise<any[]
         const itemId = parseInt(match[2]);
         
         // 訪問商品頁面獲取詳細資訊
-        const response = await axios.get(url, {
+        await axios.get(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
           },
@@ -75,7 +75,7 @@ export async function fetchProductDetailsFromURLs(urls: string[]): Promise<any[]
           url: url,
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Error fetching product from ${url}:`, error);
     }
   }

@@ -1,11 +1,12 @@
 'use client';
 
-import { Image } from '@/lib/types';
+import Image from 'next/image';
+import { Image as ImageType } from '@/lib/types';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 
 interface ImageModalProps {
-  image: Image;
+  image: ImageType;
   onClose: () => void;
 }
 
@@ -34,11 +35,16 @@ export default function ImageModal({ image, onClose }: ImageModalProps) {
         </button>
 
         <div className="bg-magic-purple/20 rounded-lg border border-magic-gold/30 magic-glow p-4">
-          <img
-            src={image.image_url}
-            alt={image.description || '空間照片'}
-            className="max-w-full max-h-[80vh] object-contain rounded-lg"
-          />
+          <div className="relative w-full max-w-5xl max-h-[80vh] min-h-[200px]">
+            <Image
+              src={image.image_url}
+              alt={image.description || '空間照片'}
+              fill
+              sizes="(max-width: 768px) 90vw, 70vw"
+              className="object-contain rounded-lg"
+              priority
+            />
+          </div>
           {image.description && (
             <p className="mt-4 text-center text-magic-gold-light font-magic">
               {image.description}

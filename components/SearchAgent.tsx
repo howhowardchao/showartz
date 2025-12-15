@@ -2,11 +2,16 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Loader2, X } from 'lucide-react';
+import { Product } from '@/lib/types';
+import ReactMarkdown from 'react-markdown';
 
 interface SearchAgentProps {
   onConversationChange?: (isActive: boolean) => void;
-  onProductRecommendation?: (hasProducts: boolean) => void;
+  onProductRecommendation?: (hasProducts: boolean, products?: Product[]) => void;
 }
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
 
 export default function SearchAgent({ onConversationChange, onProductRecommendation }: SearchAgentProps) {
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -60,7 +65,9 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
         if (response.status === 429) {
           throw new Error(errorData.error || '抱歉，目前我的對話時間有限時，請您等候5分鐘後再與我聊聊。');
         }
-        throw new Error(errorData.error || errorData.details || 'Failed to get response');
+        // 使用詳細的錯誤訊息（如果有的話），否則使用錯誤訊息
+        const errorMsg = errorData.details || errorData.error || 'Failed to get response';
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -84,16 +91,30 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
       // 通知是否需要顯示商品推薦
       if (onProductRecommendation) {
         const hasProducts = data.recommendedProducts && data.recommendedProducts.length > 0;
-        onProductRecommendation(hasProducts);
+        const products = data.recommendedProducts || undefined;
+        console.log('[SearchAgent] Product recommendation:', { hasProducts, productCount: products?.length });
+        onProductRecommendation(hasProducts, products);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Search error:', error);
-      const errorMessage = error?.message || '發生了未知錯誤';
+      const errorMessage = getErrorMessage(error) || '發生了未知錯誤';
+      
+      // 如果是限時/冷卻錯誤，只顯示等待訊息，不添加其他說明
+      let displayMessage: string;
+      if (errorMessage.includes('對話時間有限時') || errorMessage.includes('等候5分鐘')) {
+        // 限時錯誤是正常的業務邏輯，只需要顯示等待訊息即可
+        const cleanMessage = errorMessage.trim().replace(/。+$/, '');
+        displayMessage = `${cleanMessage}。`;
+      } else {
+        // 其他錯誤才需要顯示「請檢查後端日誌或稍後再試」
+        displayMessage = `抱歉，發生了錯誤：${errorMessage}。請檢查後端日誌或稍後再試。`;
+      }
+      
       setMessages((prev) => [
         ...prev,
         { 
           role: 'assistant', 
-          content: `抱歉，發生了錯誤：${errorMessage}。請檢查後端日誌或稍後再試。` 
+          content: displayMessage
         },
       ]);
     } finally {
@@ -105,7 +126,7 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
     setMessages([]);
     setThreadId(null);
     onConversationChange?.(false);
-    onProductRecommendation?.(false);
+    onProductRecommendation?.(false, undefined);
   };
 
   const hasMessages = messages.length > 0;
@@ -172,7 +193,30 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
                       : 'bg-magic-blue/50 text-magic-gold-light'
                   }`}
                 >
-                  <p className="text-sm md:text-base whitespace-pre-wrap">{msg.content}</p>
+                  {msg.role === 'assistant' ? (
+                    <div className="text-sm md:text-base text-magic-gold-light">
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                          strong: ({ children }) => <strong className="font-bold text-magic-gold">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1 ml-2">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1 ml-2">{children}</ol>,
+                          li: ({ children }) => <li className="ml-1">{children}</li>,
+                          h1: ({ children }) => <h1 className="text-lg font-bold mb-2 text-magic-gold">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-base font-bold mb-2 text-magic-gold">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-sm font-bold mb-1 text-magic-gold">{children}</h3>,
+                          code: ({ children }) => <code className="bg-magic-dark/50 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
+                          blockquote: ({ children }) => <blockquote className="border-l-2 border-magic-gold/50 pl-3 italic my-2">{children}</blockquote>,
+                          hr: () => <hr className="border-magic-gold/30 my-3" />,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="text-sm md:text-base whitespace-pre-wrap">{msg.content}</p>
+                  )}
                 </div>
               </div>
             ))}

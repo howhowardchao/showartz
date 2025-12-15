@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-export async function GET(request: NextRequest) {
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+export async function GET() {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     const assistantId = process.env.OPENAI_ASSISTANT_ID;
@@ -19,10 +22,10 @@ export async function GET(request: NextRequest) {
     try {
       const openai = new OpenAI({ apiKey });
       // Try a simple API call
-      const models = await openai.models.list();
+      await openai.models.list();
       clientTest = true;
-    } catch (error: any) {
-      clientError = error?.message || String(error);
+    } catch (error: unknown) {
+      clientError = toErrorMessage(error);
     }
 
     // Try to retrieve assistant
@@ -48,8 +51,8 @@ export async function GET(request: NextRequest) {
             } : null,
           })) || [],
         };
-      } catch (error: any) {
-        assistantError = error?.message || String(error);
+      } catch (error: unknown) {
+        assistantError = toErrorMessage(error);
         // Try to list assistants to see what's available
         try {
           const openai = new OpenAI({ apiKey });
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
             created_at: a.created_at,
             tools_count: a.tools?.length || 0,
           }));
-        } catch (listError: any) {
+        } catch {
           // Ignore list error
         }
       }
@@ -82,11 +85,11 @@ export async function GET(request: NextRequest) {
         ? `找不到指定的 Assistant，但找到 ${assistantList.length} 個其他 Assistant。請檢查 Assistant ID 是否正確，或使用列表中的 ID。`
         : '找不到指定的 Assistant，且無法列出其他 Assistant。請確認 Assistant ID 是否正確，或在 OpenAI 平台創建新的 Assistant。',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
-        error: error?.message || String(error),
+        error: toErrorMessage(error),
       },
       { status: 500 }
     );

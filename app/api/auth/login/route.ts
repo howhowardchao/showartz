@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword } from '@/lib/auth';
 import { getAdminUserByUsername } from '@/lib/db';
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();
@@ -36,12 +39,12 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: error?.message || String(error)
+        details: toErrorMessage(error)
       },
       { status: 500 }
     );

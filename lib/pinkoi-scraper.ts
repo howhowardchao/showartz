@@ -20,6 +20,14 @@ export interface PinkoiProduct {
   tags?: string[];
 }
 
+const toErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
+type PageLike = {
+  goto: (url: string, options?: Record<string, unknown>) => Promise<unknown>;
+  evaluate: (...args: unknown[]) => Promise<unknown>;
+};
+
 /**
  * 從 Pinkoi API 獲取商品列表
  */
@@ -50,17 +58,20 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
 
         console.log(`[Pinkoi Scraper] Response status: ${response.status}`);
         
-        const data = response.data;
+        const data = response.data as Record<string, unknown>;
         
         // 解析回應資料 - Pinkoi API 格式：{ products: [...], pagination: {...} }
-        let items: any[] = [];
+        let items: unknown[] = [];
         
-        if (data.products && Array.isArray(data.products)) {
-          items = data.products;
-        } else if (data.data?.products) {
-          items = data.data.products;
+        if (Array.isArray((data as { products?: unknown }).products)) {
+          items = (data as { products: unknown[] }).products;
+        } else if (
+          (data as { data?: { products?: unknown[] } }).data &&
+          Array.isArray((data as { data?: { products?: unknown[] } }).data?.products)
+        ) {
+          items = (data as { data: { products: unknown[] } }).data.products;
         } else if (Array.isArray(data)) {
-          items = data;
+          items = data as unknown[];
         }
         
         console.log(`[Pinkoi Scraper] Found ${items.length} products on page ${page}`);
@@ -71,44 +82,44 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
         }
         
         // 轉換為標準格式
-        for (const item of items) {
+        for (const item of items as Array<Record<string, unknown>>) {
           try {
             // 解析價格格式：$$TWD$$1860$$ -> 1860
             let price = 0;
-            if (item.price) {
-              const priceMatch = item.price.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
-              if (priceMatch) {
-                price = parseFloat(priceMatch[1]);
-              } else {
-                price = parseFloat(item.price.toString().replace(/[^\d.]/g, '')) || 0;
-              }
+            const priceSource = item.price;
+            if (typeof priceSource === 'string') {
+              const priceMatch = priceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
+              price = priceMatch ? parseFloat(priceMatch[1]) : parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
+            } else if (typeof priceSource === 'number') {
+              price = priceSource;
             }
             
             // 解析原價
             let originalPrice: number | undefined;
-            if (item.oprice) {
-              const opriceMatch = item.oprice.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
-              if (opriceMatch) {
-                originalPrice = parseFloat(opriceMatch[1]);
-              }
+            const opriceSource = item.oprice;
+            if (typeof opriceSource === 'string') {
+              const opriceMatch = opriceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
+              originalPrice = opriceMatch ? parseFloat(opriceMatch[1]) : undefined;
+            } else if (typeof opriceSource === 'number') {
+              originalPrice = opriceSource;
             }
             
             // 構建商品 URL
             const productUrl = item.tid 
               ? `https://www.pinkoi.com/product/${item.tid}`
-              : `https://www.pinkoi.com/product/${item.product_id || item.id}`;
+              : `https://www.pinkoi.com/product/${(item as { product_id?: unknown; id?: unknown }).product_id || (item as { id?: unknown }).id}`;
             
             // 構建圖片 URL - Pinkoi 的圖片格式：https://cdn01.pinkoi.com/product/[tid]/0/800x0.jpg
-            const productId = item.tid || item.product_id || item.id || '';
+            const productId = (item.tid || (item as { product_id?: unknown }).product_id || (item as { id?: unknown }).id || '') as string;
             const images: string[] = [];
             
             // 嘗試從 item 中提取圖片（如果有的話）
-            if (item.images && Array.isArray(item.images)) {
-              images.push(...item.images);
-            } else if (item.image_urls && Array.isArray(item.image_urls)) {
-              images.push(...item.image_urls);
-            } else if (item.image) {
-              images.push(item.image);
+            if (Array.isArray((item as { images?: unknown }).images)) {
+              images.push(...((item as { images: string[] }).images));
+            } else if (Array.isArray((item as { image_urls?: unknown }).image_urls)) {
+              images.push(...((item as { image_urls: string[] }).image_urls));
+            } else if (typeof (item as { image?: unknown }).image === 'string') {
+              images.push((item as { image: string }).image);
             }
             
             // 如果沒有圖片，直接構建 Pinkoi 的標準圖片 URL
@@ -120,17 +131,17 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
             
             const product: PinkoiProduct = {
               product_id: productId,
-              name: item.title || item.name || item.product_name || '',
-              description: item.description || item.desc || item.summary || undefined,
+              name: (item.title as string) || (item.name as string) || (item.product_name as string) || '',
+              description: (item.description as string) || (item.desc as string) || (item.summary as string) || undefined,
               price: price,
               original_price: originalPrice,
               images: images,
               url: productUrl,
-              stock: item.stock || item.quantity || item.inventory || undefined,
-              sales_count: item.sold_count || item.sold || item.sales_count || undefined,
-              rating: item.review_info?.score ? item.review_info.score / 10 : undefined, // Pinkoi 評分是 0-50，轉換為 0-5
-              category: item.category_name || item.category?.toString() || undefined,
-              tags: item.tags || item.tag_list || undefined,
+              stock: (item.stock as number) || (item.quantity as number) || (item.inventory as number) || undefined,
+              sales_count: (item.sold_count as number) || (item.sold as number) || (item.sales_count as number) || undefined,
+              rating: (item.review_info as { score?: number })?.score ? ((item.review_info as { score?: number }).score ?? 0) / 10 : undefined, // Pinkoi 評分是 0-50，轉換為 0-5
+              category: (item.category_name as string) || ((item.category as unknown)?.toString() ?? undefined),
+              tags: (item.tags as string[]) || (item.tag_list as string[]) || undefined,
             };
             
             // 驗證必要欄位
@@ -156,8 +167,8 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
         // 避免請求過快
         await new Promise(resolve => setTimeout(resolve, 500));
         
-      } catch (error: any) {
-        console.error(`[Pinkoi Scraper] Error fetching page ${page}:`, error?.message || String(error));
+      } catch (error: unknown) {
+        console.error(`[Pinkoi Scraper] Error fetching page ${page}:`, toErrorMessage(error));
         hasMore = false;
         break;
       }
@@ -235,20 +246,20 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
         const productMap: Record<string, string[]> = {};
         
         // 方法 1: 查找所有商品連結及其對應的圖片
-        const productLinks = document.querySelectorAll('a[href*="/product/"]');
+        const productLinks = document.querySelectorAll<HTMLAnchorElement>('a[href*="/product/"]');
         
-        productLinks.forEach((link: any) => {
+        productLinks.forEach((link) => {
           const href = link.getAttribute('href') || link.href || '';
           const match = href.match(/\/product\/([^\/\?]+)/);
           if (match) {
             const productId = match[1];
             
             // 向上查找父元素中的圖片（最多向上 5 層）
-            let current = link;
+            let current: HTMLElement | null = link;
             for (let i = 0; i < 8 && current; i++) {
-              const imgs = current.querySelectorAll('img');
+              const imgs = current.querySelectorAll<HTMLImageElement>('img');
               for (const img of Array.from(imgs)) {
-                const src = (img as any).getAttribute('src') || (img as any).getAttribute('data-src') || (img as any).getAttribute('data-lazy-src') || '';
+                const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
                 if (src && (src.includes('cdn') || src.includes('pinkoi')) && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner')) {
                   let fullUrl = src;
                   if (!fullUrl.startsWith('http')) {
@@ -279,8 +290,8 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
         });
         
         // 方法 2: 直接從所有圖片 URL 中提取商品 ID（更可靠的方法）
-        const allImages = document.querySelectorAll('img');
-        allImages.forEach((img: any) => {
+        const allImages = document.querySelectorAll<HTMLImageElement>('img');
+        allImages.forEach((img) => {
           const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
           if (src && src.includes('product') && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner')) {
             // 從圖片 URL 中提取商品 ID：/product/[productId]/...
@@ -350,7 +361,7 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
 /**
  * 從商品詳情頁面獲取圖片（用於沒有圖片的商品）
  */
-async function fetchImagesFromDetailPages(products: PinkoiProduct[], page: any): Promise<void> {
+async function fetchImagesFromDetailPages(products: PinkoiProduct[], page: PageLike): Promise<void> {
   for (const product of products) {
     try {
       await page.goto(product.url, {
@@ -364,9 +375,9 @@ async function fetchImagesFromDetailPages(products: PinkoiProduct[], page: any):
         const imageUrls: string[] = [];
         
         // 方法 1: 從圖片元素提取
-        const imgElements = document.querySelectorAll('img[src*="product"], img[data-src*="product"], img[src*="cdn"], img[data-src*="cdn"]');
+        const imgElements = document.querySelectorAll<HTMLImageElement>('img[src*="product"], img[data-src*="product"], img[src*="cdn"], img[data-src*="cdn"]');
         
-        imgElements.forEach((img: any) => {
+        imgElements.forEach((img) => {
           const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
           if (src && (src.includes('product') || src.includes('cdn')) && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner')) {
             let fullUrl = src.startsWith('http') ? src : (src.startsWith('//') ? `https:${src}` : `https://www.pinkoi.com${src}`);
@@ -447,7 +458,7 @@ export async function scrapePinkoiProductsPuppeteer(storeId: string = 'showartz'
                 url: item.url || `https://www.pinkoi.com/product/${item.product_id}`,
               });
             }
-          } catch (e) {
+          } catch {
             // 忽略錯誤
           }
         }

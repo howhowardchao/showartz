@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { Image } from '@/lib/types';
 import { Trash2, Plus, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
@@ -184,11 +185,13 @@ export default function ImageManager() {
               </div>
             )}
             {newImage.image_url && (
-              <div className="w-32 h-32 rounded-lg overflow-hidden border border-magic-purple/30 bg-magic-dark">
-                <img
+              <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-magic-purple/30 bg-magic-dark">
+                <Image
                   src={newImage.image_url}
                   alt="故事圖文預覽"
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="128px"
+                  className="object-cover"
                 />
               </div>
             )}
@@ -228,11 +231,13 @@ export default function ImageManager() {
             key={image.id}
             className="bg-magic-purple/20 rounded-lg border border-magic-purple/30 p-4 space-y-2"
           >
-            <div className="aspect-square bg-magic-dark rounded-lg overflow-hidden">
-              <img
+            <div className="relative aspect-square bg-magic-dark rounded-lg overflow-hidden">
+              <Image
                 src={image.image_url}
                 alt={image.description || '空間照片'}
-                className="w-full h-full object-cover"
+                fill
+                sizes="200px"
+                className="object-cover"
               />
             </div>
             {image.description && (

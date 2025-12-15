@@ -64,7 +64,6 @@ export function canStartConversation(ip: string): { allowed: boolean; reason?: s
 
   // 檢查是否在冷卻期
   if (state.cooldownEndTime && state.cooldownEndTime > now) {
-    const remainingSeconds = Math.ceil((state.cooldownEndTime - now) / 1000);
     return {
       allowed: false,
       reason: 'cooldown',
