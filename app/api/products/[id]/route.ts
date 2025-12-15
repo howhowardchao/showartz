@@ -3,9 +3,9 @@ import { getProductById, updateProduct, deleteProduct } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 const toErrorMessage = (error: unknown) =>
@@ -17,7 +17,7 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const product = await getProductById(id);
     
     if (!product) {
@@ -42,7 +42,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const product = await updateProduct(id, body);
 
@@ -67,7 +67,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     console.log('[Delete Product] Attempting to delete product:', id);
     
     const success = await deleteProduct(id);
