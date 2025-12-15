@@ -8,14 +8,35 @@ set -e  # 遇到錯誤立即退出
 echo "🚀 開始部署最新優化到正式站..."
 echo ""
 
-# 檢查是否在正確的目錄
-if [ ! -f "docker-compose.yml" ]; then
-    echo "❌ 錯誤: 請在專案根目錄執行此腳本"
-    exit 1
+# 自動檢測專案目錄（安全模式）
+PROJECT_DIR="/opt/showartz"
+if [ ! -d "$PROJECT_DIR" ]; then
+    # 嘗試其他常見路徑
+    if [ -d "/home/$(whoami)/showartz" ]; then
+        PROJECT_DIR="/home/$(whoami)/showartz"
+    elif [ -d "$HOME/showartz" ]; then
+        PROJECT_DIR="$HOME/showartz"
+    elif [ -d "$(dirname "$0")/.." ] && [ -f "$(dirname "$0")/../docker-compose.yml" ]; then
+        PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+    else
+        echo "❌ 錯誤: 找不到專案目錄"
+        echo "請在專案目錄中執行此腳本，或修改 PROJECT_DIR 變數"
+        exit 1
+    fi
 fi
 
-# 進入專案目錄（如果不在）
-cd /opt/showartz 2>/dev/null || cd "$(dirname "$0")/.."
+# 進入專案目錄（如果失敗則退出）
+cd "$PROJECT_DIR" || {
+    echo "❌ 錯誤: 無法進入專案目錄: $PROJECT_DIR"
+    exit 1
+}
+
+# 驗證在正確的目錄
+if [ ! -f "docker-compose.yml" ]; then
+    echo "❌ 錯誤: 找不到 docker-compose.yml 文件"
+    echo "當前目錄: $(pwd)"
+    exit 1
+fi
 
 echo "📂 當前目錄: $(pwd)"
 echo ""
