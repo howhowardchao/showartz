@@ -35,20 +35,20 @@ echo "📁 使用專案目錄: $PROJECT_DIR"
 echo ""
 
 # 1. 停止所有容器
-echo "🛑 步驟 1/5: 停止所有容器..."
+echo "🛑 步驟 1/6: 停止所有容器..."
 docker-compose down
 echo "✅ 容器已停止"
 echo ""
 
 # 2. 清理可能的問題
-echo "🧹 步驟 2/5: 清理..."
+echo "🧹 步驟 2/6: 清理..."
 # 檢查是否有僵屍進程
 pkill -f "node.*next" 2>/dev/null || true
 echo "✅ 清理完成"
 echo ""
 
 # 3. 檢查環境變數文件
-echo "🔐 步驟 3/5: 檢查環境變數..."
+echo "🔐 步驟 3/6: 檢查環境變數..."
 if [ ! -f .env ]; then
     echo "⚠️  警告: .env 文件不存在，請確保已配置"
 else
