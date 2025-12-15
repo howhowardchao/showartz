@@ -2,12 +2,12 @@
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { Image } from '@/lib/types';
+import { Image as ImageType } from '@/lib/types';
 import ImageModal from '@/components/ImageModal';
 
 export default function SpacePage() {
-  const [images, setImages] = useState<Image[]>([]);
-  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
+  const [images, setImages] = useState<ImageType[]>([]);
+  const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

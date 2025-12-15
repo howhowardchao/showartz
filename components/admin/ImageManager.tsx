@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
-import { Image } from '@/lib/types';
+import { Image as ImageType } from '@/lib/types';
 import { Trash2, Plus, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
 
 export default function ImageManager() {
-  const [images, setImages] = useState<Image[]>([]);
+  const [images, setImages] = useState<ImageType[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newImage, setNewImage] = useState({
