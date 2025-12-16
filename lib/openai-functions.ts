@@ -259,13 +259,7 @@ export async function executeFunction(
         });
         return {
           success: true,
-          products: allProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            category: p.category,
-            tags: p.tags,
-          })),
+          products: allProducts,
           total: allProducts.length,
         };
         }
