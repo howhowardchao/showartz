@@ -173,7 +173,7 @@ export async function sendMessage(threadId: string, message: string): Promise<{
           try {
             debugLog(`[OpenAI] Executing function: ${functionName}`, functionArgs);
             const { executeFunction } = await import('./openai-functions');
-            const result = await executeFunction(functionName, functionArgs);
+            const result = await executeFunction(functionName as 'recommend_products' | 'search_products_by_tags' | 'get_all_products', functionArgs);
             debugLog(`[OpenAI] Function ${functionName} result:`, { 
               success: result.success, 
               productCount: result.products?.length || 0 
