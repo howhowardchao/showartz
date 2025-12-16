@@ -369,7 +369,7 @@ export default function VideoManager() {
                   {(editData.thumbnail_url !== undefined ? editData.thumbnail_url : video.thumbnail_url) && (
                     <div className="relative w-32 h-56 rounded overflow-hidden border border-magic-purple/30 bg-magic-dark">
                       <NextImage
-                        src={editData.thumbnail_url !== undefined ? editData.thumbnail_url : video.thumbnail_url}
+                        src={editData.thumbnail_url || video.thumbnail_url || '/placeholder.jpg'}
                         alt="縮圖預覽"
                         fill
                         sizes="160px"
