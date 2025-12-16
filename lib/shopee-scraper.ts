@@ -108,42 +108,53 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
       const apiResponses: string[] = [];
 
       // 監聽所有網路請求，記錄可能的 API 端點
-      page.on('response', async (response) => {
-        const url = response.url();
-        
-        // 記錄所有包含 shop 或 item 的請求
-        if (url.includes('shop') || url.includes('item') || url.includes('product')) {
-          apiResponses.push(url);
-          console.log(`[Puppeteer] Found relevant request: ${url.substring(0, 100)}`);
-        }
-        
-        // 檢查是否為商品相關的 API
-        if (
-          url.includes('shop/get_all_shop_items') ||
-          url.includes('shop/search_items') ||
-          url.includes('shopee.shop.get_all_shop_items') ||
-          url.includes('shop/get_shop_detail') ||
-          url.includes('v4/shop') ||
-          url.includes('v2/shop') ||
-          url.includes('api/v4/shop') ||
-          url.includes('api/v2/shop')
-        ) {
+      page.on('response', (response) => {
+        // 使用立即執行的 async 函數來處理異步操作，確保錯誤被捕獲
+        (async () => {
           try {
-            const data = await response.json();
-            console.log(`[Puppeteer] Found API response: ${url}`);
-            const items = parseShopeeResponse(data);
-            if (items.length > 0) {
-              console.log(`[Puppeteer] Parsed ${items.length} products from API`);
-              products.push(...items);
-            } else {
-              // 記錄回應結構以便調試
-              console.log(`[Puppeteer] API response structure:`, JSON.stringify(data).substring(0, 500));
+            const url = response.url();
+            
+            // 記錄所有包含 shop 或 item 的請求
+            if (url.includes('shop') || url.includes('item') || url.includes('product')) {
+              apiResponses.push(url);
+              console.log(`[Puppeteer] Found relevant request: ${url.substring(0, 100)}`);
             }
-          } catch {
-            // 忽略非 JSON 回應
-            console.log(`[Puppeteer] Response is not JSON: ${url}`);
+            
+            // 檢查是否為商品相關的 API
+            if (
+              url.includes('shop/get_all_shop_items') ||
+              url.includes('shop/search_items') ||
+              url.includes('shopee.shop.get_all_shop_items') ||
+              url.includes('shop/get_shop_detail') ||
+              url.includes('v4/shop') ||
+              url.includes('v2/shop') ||
+              url.includes('api/v4/shop') ||
+              url.includes('api/v2/shop')
+            ) {
+              try {
+                const data = await response.json();
+                console.log(`[Puppeteer] Found API response: ${url}`);
+                const items = parseShopeeResponse(data);
+                if (items.length > 0) {
+                  console.log(`[Puppeteer] Parsed ${items.length} products from API`);
+                  products.push(...items);
+                } else {
+                  // 記錄回應結構以便調試
+                  console.log(`[Puppeteer] API response structure:`, JSON.stringify(data).substring(0, 500));
+                }
+              } catch (error: unknown) {
+                // 忽略非 JSON 回應或其他錯誤
+                console.log(`[Puppeteer] Response is not JSON or error: ${url}`, toErrorMessage(error));
+              }
+            }
+          } catch (error: unknown) {
+            // 捕獲所有錯誤，防止未處理的 Promise rejection
+            console.error('[Puppeteer] Error in response handler:', toErrorMessage(error));
           }
-        }
+        })().catch((error: unknown) => {
+          // 額外的錯誤捕獲，確保不會有未處理的 Promise
+          console.error('[Puppeteer] Unhandled error in response handler:', toErrorMessage(error));
+        });
       });
 
       // 訪問商店頁面

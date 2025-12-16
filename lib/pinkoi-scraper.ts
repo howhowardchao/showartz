@@ -442,26 +442,38 @@ export async function scrapePinkoiProductsPuppeteer(storeId: string = 'showartz'
       const products: PinkoiProduct[] = [];
       
       // 監聽 API 請求
-      page.on('response', async (response) => {
-        const url = response.url();
-        if (url.includes('apiv3/shop/search_product')) {
+      page.on('response', (response) => {
+        // 使用立即執行的 async 函數來處理異步操作，確保錯誤被捕獲
+        (async () => {
           try {
-            const data = await response.json();
-            const items = data.data?.products || data.products || [];
-            
-            for (const item of items) {
-              products.push({
-                product_id: item.product_id || item.id || '',
-                name: item.name || item.title || '',
-                price: parseFloat(item.price || '0') || 0,
-                images: item.images || [],
-                url: item.url || `https://www.pinkoi.com/product/${item.product_id}`,
-              });
+            const url = response.url();
+            if (url.includes('apiv3/shop/search_product')) {
+              try {
+                const data = await response.json();
+                const items = data.data?.products || data.products || [];
+                
+                for (const item of items) {
+                  products.push({
+                    product_id: item.product_id || item.id || '',
+                    name: item.name || item.title || '',
+                    price: parseFloat(item.price || '0') || 0,
+                    images: item.images || [],
+                    url: item.url || `https://www.pinkoi.com/product/${item.product_id}`,
+                  });
+                }
+              } catch (error: unknown) {
+                // 忽略 JSON 解析錯誤
+                console.log(`[Pinkoi Scraper] Error parsing response: ${url}`, toErrorMessage(error));
+              }
             }
-          } catch {
-            // 忽略錯誤
+          } catch (error: unknown) {
+            // 捕獲所有錯誤，防止未處理的 Promise rejection
+            console.error('[Pinkoi Scraper] Error in response handler:', toErrorMessage(error));
           }
-        }
+        })().catch((error: unknown) => {
+          // 額外的錯誤捕獲，確保不會有未處理的 Promise
+          console.error('[Pinkoi Scraper] Unhandled error in response handler:', toErrorMessage(error));
+        });
       });
 
       console.log(`[Pinkoi Scraper] Navigating to https://www.pinkoi.com/store/${storeId}...`);
