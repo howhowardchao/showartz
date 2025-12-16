@@ -124,7 +124,9 @@ export async function POST(request: NextRequest) {
       response = cleanedResponse || response;
     } catch (error: unknown) {
       console.error('[Search API] Error sending message to OpenAI:', error);
-      console.error('[Search API] Error stack:', error?.stack);
+      if (error instanceof Error) {
+        console.error('[Search API] Error stack:', error.stack);
+      }
       
       // 提供更友好的錯誤訊息
       let errorMessage = 'Failed to get response from assistant';
