@@ -12,9 +12,10 @@ COPY package*.json ./
 RUN npm cache clean --force
 
 # Install dependencies（含 dev，為 build 所需）
-RUN npm ci
+ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org
+RUN npm ci --prefer-online --no-audit
 # 強制確保使用正確 Next 版本（避免 npm cache 安裝舊版）
-RUN npm install next@16.0.10 --no-save
+RUN npm install next@16.0.10 --no-save --prefer-online --registry=https://registry.npmjs.org
 
 # Copy source code
 COPY . .
