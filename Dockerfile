@@ -11,11 +11,12 @@ COPY package*.json ./
 # Avoid stale cache pulling old Next.js
 RUN npm cache clean --force
 
-# 安裝依賴：捨棄 lock，直接線上抓最新（確保 next 為 16.0.10）
+# 安裝依賴：捨棄 lock，直接線上抓最新（強制 next 為 16.0.10）
 ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org
 RUN rm -rf node_modules package-lock.json \
-  && npm install --prefer-online --no-audit --legacy-peer-deps \
-  && npm install next@16.0.10 --save-exact --prefer-online --no-audit --legacy-peer-deps
+  && npm install next@16.0.10 --save-exact --prefer-online --no-audit --legacy-peer-deps --registry=https://registry.npmjs.org \
+  && npm install --prefer-online --no-audit --legacy-peer-deps --registry=https://registry.npmjs.org \
+  && node -e "console.log('Next version in builder:', require('./node_modules/next/package.json').version)"
 
 # Copy source code
 COPY . .
