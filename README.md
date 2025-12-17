@@ -138,6 +138,13 @@
   - `docs/` 或 `ops/`（可視需求建立）：部署/故障排除，如 `DEPLOY_FIX_502.md`、`FIX_502_ANALYSIS.md`、`QUICK_FIX.md`
 - 建議每份文檔開頭包含：目的、適用環境、步驟/命令、期望輸出、風險/注意事項、更新日期。
 
+## 文檔索引
+- 根目錄：`README.md`（總覽與入口）、`QUICKSTART.md`（快速開始）、`SETUP_ENV.md`（環境設定）。
+- docs/：分析與最佳化報告（如 `ANALYSIS_REPORT.md`、`OPTIMIZATION_REPORT.md`）。
+- docs/ops/：部署與故障排除／Nginx／502 修復（如 `DEPLOY_FIX_502.md`、`FIX_502_ANALYSIS.md`、`QUICK_FIX.md`、`DEPLOY_LATEST.md`、`DEPLOY_STEPS.md`、`DEPLOY_VULTR.md`、`DEPLOYMENT_STATUS.md`、`VULTR_QUICK_START.md`、`NGINX_CONFIG.md`、`NGINX_UPLOADS_FIX.md`）。
+- readme/：Assistant/AI 專題文檔與提示詞（如 `OpenAI Assistant 配置指南.md`、`創建新的 Assistant.md`、`showartz Tarot 顧問＋商品推薦助理提示詞`、`showartz_product_tools_schema.json`）。
+- 規則：新增文檔請依主題放到對應目錄，並在本索引補上一行用途描述。
+
 ## 系統架構
 
 ```
