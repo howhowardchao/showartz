@@ -15,7 +15,8 @@ RUN npm cache clean --force
 ENV NPM_CONFIG_REGISTRY=https://registry.npmjs.org
 RUN npm ci --prefer-online --no-audit
 # 強制確保使用正確 Next 版本（避免 npm cache 安裝舊版）
-RUN npm install next@16.0.10 --no-save --prefer-online --registry=https://registry.npmjs.org
+RUN rm -rf node_modules/next \
+  && npm install next@16.0.10 --no-save --prefer-online --registry=https://registry.npmjs.org --force
 
 # Copy source code
 COPY . .
