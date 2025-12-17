@@ -13,6 +13,8 @@ RUN npm cache clean --force
 
 # Install dependencies（含 dev，為 build 所需）
 RUN npm ci
+# 強制確保使用正確 Next 版本（避免 npm cache 安裝舊版）
+RUN npm install next@16.0.10 --no-save
 
 # Copy source code
 COPY . .
