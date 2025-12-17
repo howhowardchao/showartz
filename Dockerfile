@@ -8,11 +8,17 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
+# Avoid stale cache pulling old Next.js
+RUN npm cache clean --force
+
 # Install dependencies（含 dev，為 build 所需）
 RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Force disable Turbopack to avoid missing routes during build
+ENV NEXT_PRIVATE_SKIP_TURBOPACK=1
 
 # Build Next.js app
 RUN npm run build
@@ -25,6 +31,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Keep same build flag in runtime for safety (should not affect start)
+ENV NEXT_PRIVATE_SKIP_TURBOPACK=1
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs \
