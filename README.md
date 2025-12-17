@@ -20,6 +20,9 @@
 
 - [功能特色](#功能特色)
 - [技術棧](#技術棧)
+- [Logging & Diagnostics](#logging--diagnostics)
+- [Scripts 一覽與歸檔規則](#scripts-一覽與歸檔規則)
+- [Documentation / README 規則](#documentation--readme-規則)
 - [系統架構](#系統架構)
 - [開發規格](#開發規格)
 - [開發過程](#開發過程)
@@ -107,6 +110,33 @@
 ### 部署
 - **容器化**: Docker + Docker Compose
 - **反向代理**: Nginx (可選)
+
+## Logging & Diagnostics
+- 主要來源：`docker-compose logs app/postgres`，以及部署/修復腳本（如 `deploy-and-fix.sh`、`fix-502.sh`、`diagnose-502.sh`）的終端輸出。
+- 內容類別：應用啟動與健康檢查、API 請求錯誤堆疊、爬蟲/同步日誌、資料庫健康狀態。
+- 輪轉/容量：Docker `json-file`，`max-size=10m`、`max-file=3`；需要更長期保留時可加 logrotate 或集中式日誌。
+- 敏感資訊：不得記錄 API Key/密碼等機密；若需調試，請脫敏後再輸出，避免在程式中 `console.log` 機密。
+- 健康檢查：`/api/health` 可作存活檢查（若需純 JSON 回應可再調整格式）。
+
+## Scripts 一覽與歸檔規則
+- 保留/常用：
+  - `scripts/deploy-and-fix.sh`：一鍵部署 + 修復
+  - `scripts/fix-502.sh`、`scripts/diagnose-502.sh`：502 修復/診斷
+  - `scripts/monitor-and-restart.sh`：可加入 cron 定期檢查並自動重啟
+  - `scripts/deploy-production.sh`：正式環境部署
+  - 初始化/維護：`create-admin.mjs`、`init-db.mjs`、`reset-admin-password.mjs`、`migrate-pinkoi.mjs`、`add-product-tags.mjs`
+- 已歸檔至 `scripts/archive/`（不常用/重複）：`deploy-remote.sh`、`deploy-to-vultr.sh`、`deploy-vultr.sh`、`redeploy-vultr.sh`、`check-env-vultr.sh`、`fix-env-vultr.sh`、`setup-ssl-vultr.sh`、`test-shopee-direct.mjs`、`test-shopee-scraper.mjs`、`DIRECT_FIX_COMMANDS.sh`
+- 規則：
+  - 常用腳本放 `scripts/`
+  - 歷史/一次性/重複腳本移 `scripts/archive/`
+  - 新增腳本請在 README 本節補充用途與依賴（含環境變數）
+
+## Documentation / README 規則
+- 主 README：快速上手、部署、日誌/監控規則、技術棧與 API 摘要。
+- 專題文檔：
+  - `readme/`：Assistant 配置、提示詞、工具 schema
+  - `docs/` 或 `ops/`（可視需求建立）：部署/故障排除，如 `DEPLOY_FIX_502.md`、`FIX_502_ANALYSIS.md`、`QUICK_FIX.md`
+- 建議每份文檔開頭包含：目的、適用環境、步驟/命令、期望輸出、風險/注意事項、更新日期。
 
 ## 系統架構
 
