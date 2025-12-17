@@ -129,12 +129,14 @@ export async function sendMessage(threadId: string, message: string): Promise<{
   }
 
   // Poll for completion and handle function calls
-  const maxWaitTime = 180000; // 180 seconds (增加時間以處理多次 Function Calling)
+  const maxWaitTime = 90000; // 90s，上限時間較短，避免長時間等待
   const startTime = Date.now();
   let pollCount = 0;
 
   while (Date.now() - startTime < maxWaitTime) {
     pollCount++;
+    const pollInterval = Math.min(2000, 500 + pollCount * 100); // 500ms 起，逐步到 2s
+
     // OpenAI SDK v6: retrieve(runId, params) where params includes thread_id
     let runStatus;
     try {
@@ -230,7 +232,7 @@ export async function sendMessage(threadId: string, message: string): Promise<{
 
     // Check if completed
     if (runStatus.status === 'completed') {
-      const messages = await openai.beta.threads.messages.list(threadId);
+      const messages = await openai.beta.threads.messages.list(threadId, { limit: 5 });
       const assistantMessages = messages.data.filter(msg => msg.role === 'assistant');
       const latestMessage = assistantMessages[0];
 
@@ -268,9 +270,9 @@ export async function sendMessage(threadId: string, message: string): Promise<{
 
     // Handle other statuses (queued, in_progress)
     if (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
-      debugLog(`[OpenAI] Run is ${runStatus.status}, waiting...`);
+      debugLog(`[OpenAI] Run is ${runStatus.status}, waiting ${pollInterval}ms...`);
       // Wait before next poll
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
       continue;
     }
 
@@ -280,7 +282,7 @@ export async function sendMessage(threadId: string, message: string): Promise<{
   }
 
   debugError(`[OpenAI] Run timed out after ${maxWaitTime}ms (${pollCount} polls)`);
-  throw new Error(`Run timed out after ${maxWaitTime}ms`);
+  throw new Error(`Run timed out after ${Math.round(maxWaitTime / 1000)}s，請稍後重試或簡化提問。`);
 }
 
 // Stream response (for real-time updates)
