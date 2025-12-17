@@ -348,7 +348,8 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                 const allAnchors = document.querySelectorAll('a[href]');
                 console.log(`[DOM Extract] Checking ${allAnchors.length} total links...`);
                 const filteredLinks = Array.from(allAnchors).filter((link) => {
-                  const href = link.getAttribute('href') || link.href || '';
+                  const anchor = link as HTMLAnchorElement;
+                  const href = anchor.getAttribute?.('href') || (anchor as HTMLAnchorElement).href || '';
                   const isProduct = href.includes('product') || href.match(/\/\d+\/\d+/) || href.match(/\/i\.\d+\/\d+/);
                   if (isProduct) {
                     console.log(`[DOM Extract] Found potential product link: ${href}`);
@@ -361,7 +362,8 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
                 // 如果還是沒有，嘗試查找所有包含數字的連結（可能是商品 ID）
                 if (allLinks.length === 0) {
                   const numericLinks = Array.from(allAnchors).filter((link) => {
-                    const href = link.getAttribute('href') || link.href || '';
+                    const anchor = link as HTMLAnchorElement;
+                    const href = anchor.getAttribute?.('href') || (anchor as HTMLAnchorElement).href || '';
                     return /\/\d+\/\d+/.test(href) && href.includes(shopId.toString());
                   });
                   allLinks = numericLinks;
@@ -371,7 +373,8 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
               
               allLinks.forEach((link) => {
                 try {
-                  const href = link.getAttribute('href') || link.href || '';
+                  const anchor = link as HTMLAnchorElement;
+                  const href = anchor.getAttribute?.('href') || (anchor as HTMLAnchorElement).href || '';
                   // 嘗試多種 URL 格式
                   const match = href.match(/\/product\/(\d+)\/(\d+)/) || 
                                href.match(/\/i\.(\d+)\/(\d+)/) ||
@@ -453,7 +456,8 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
               productCards.forEach((card) => {
                 try {
                   const link = card.querySelector('a[href*="/product/"]') || card.closest('a[href*="/product/"]') || card;
-                  const href = link.getAttribute('href') || link.href;
+                  const anchor = link as HTMLAnchorElement;
+                  const href = anchor.getAttribute?.('href') || (anchor as HTMLAnchorElement).href;
                   if (href) {
                     const match = href.match(/\/product\/(\d+)\/(\d+)/);
                     if (match) {
@@ -505,19 +509,38 @@ export async function scrapeShopeeProductsPuppeteer(shopId: number): Promise<Sho
         // 轉換 DOM 提取的資料
         for (const item of domProducts) {
           try {
+            const normalized = item as Record<string, unknown>;
             const product: ShopeeProduct = {
-              item_id: item.itemid || item.item_id || 0,
-              shop_id: item.shopid || item.shop_id || shopId,
-              name: item.name || item.item_name || item.title || '',
-              description: item.description || item.desc || undefined,
-              price: parseFloat(item.price?.toString().replace(/[^\d.]/g, '') || '0') || 0,
-              original_price: item.original_price ? parseFloat(item.original_price.toString().replace(/[^\d.]/g, '')) : undefined,
-              images: item.image ? [item.image.startsWith('http') ? item.image : (item.image.startsWith('//') ? `https:${item.image}` : (item.image.startsWith('/') ? `https://shopee.tw${item.image}` : `https://cf.shopee.tw/file/${item.image}`))] : (item.images || []).map((img: string) => img.startsWith('http') ? img : (img.startsWith('//') ? `https:${img}` : (img.startsWith('/') ? `https://shopee.tw${img}` : `https://cf.shopee.tw/file/${img}`))),
-              url: item.url || `https://shopee.tw/product/${shopId}/${item.itemid || item.item_id}`,
-              stock: item.stock || item.quantity || undefined,
-              sales_count: item.sold || item.sold_count || item.historical_sold || undefined,
-              rating: item.rating || item.rating_star || undefined,
-              category: item.category_name || item.category || undefined,
+              item_id: Number(normalized.itemid ?? normalized.item_id ?? 0),
+              shop_id: Number(normalized.shopid ?? normalized.shop_id ?? shopId),
+              name: (normalized.name as string) || (normalized.item_name as string) || (normalized.title as string) || '',
+              description: (normalized.description as string) || (normalized.desc as string) || undefined,
+              price: parseFloat((normalized.price as string | number | undefined)?.toString().replace(/[^\d.]/g, '') || '0') || 0,
+              original_price: normalized.original_price ? parseFloat((normalized.original_price as string | number).toString().replace(/[^\d.]/g, '')) : undefined,
+              images: normalized.image
+                ? [
+                    (normalized.image as string).startsWith('http')
+                      ? (normalized.image as string)
+                      : (normalized.image as string).startsWith('//')
+                        ? `https:${normalized.image as string}`
+                        : (normalized.image as string).startsWith('/')
+                          ? `https://shopee.tw${normalized.image as string}`
+                          : `https://cf.shopee.tw/file/${normalized.image as string}`,
+                  ]
+                : ((normalized.images as string[] | undefined) || []).map((img: string) =>
+                    img.startsWith('http')
+                      ? img
+                      : img.startsWith('//')
+                        ? `https:${img}`
+                        : img.startsWith('/')
+                          ? `https://shopee.tw${img}`
+                          : `https://cf.shopee.tw/file/${img}`
+                  ),
+              url: (normalized.url as string) || `https://shopee.tw/product/${shopId}/${normalized.itemid || normalized.item_id}`,
+              stock: (normalized.stock as number) || (normalized.quantity as number) || undefined,
+              sales_count: (normalized.sold as number) || (normalized.sold_count as number) || (normalized.historical_sold as number) || undefined,
+              rating: (normalized.rating as number) || (normalized.rating_star as number) || undefined,
+              category: (normalized.category_name as string) || (normalized.category as string) || undefined,
             };
             
             if (product.item_id && product.name) {

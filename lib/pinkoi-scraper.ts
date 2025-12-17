@@ -25,7 +25,7 @@ const toErrorMessage = (error: unknown) =>
 
 type PageLike = {
   goto: (url: string, options?: Record<string, unknown>) => Promise<unknown>;
-  evaluate: (...args: unknown[]) => Promise<unknown>;
+  evaluate: (pageFunction: (...args: any[]) => any, ...args: any[]) => Promise<any>;
 };
 
 /**
@@ -155,9 +155,13 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
         }
         
         // 檢查是否還有更多頁面
-        if (data.pagination) {
-          hasMore = data.pagination.next_page !== null && data.pagination.next_page !== undefined;
-          console.log(`[Pinkoi Scraper] Pagination: page ${data.pagination.page}/${data.pagination.page_count}, hasMore: ${hasMore}`);
+        const pagination = (data as { pagination?: { next_page?: unknown; page?: unknown; page_count?: unknown } }).pagination;
+        if (pagination && typeof pagination === 'object') {
+          const nextPage = (pagination as { next_page?: unknown }).next_page;
+          hasMore = nextPage !== null && nextPage !== undefined;
+          const pageNo = (pagination as { page?: unknown }).page ?? '?';
+          const pageCount = (pagination as { page_count?: unknown }).page_count ?? '?';
+          console.log(`[Pinkoi Scraper] Pagination: page ${pageNo}/${pageCount}, hasMore: ${hasMore}`);
         } else if (items.length < 20) { // 假設每頁 20 個商品
           hasMore = false;
         }

@@ -195,7 +195,9 @@ export async function sendMessage(threadId: string, message: string): Promise<{
           } catch (error: unknown) {
             debugError(`[OpenAI] Error executing function ${functionName}:`, error);
             debugError(`[OpenAI] Function arguments:`, functionArgs);
-            debugError(`[OpenAI] Error stack:`, error?.stack);
+            if (error instanceof Error) {
+              debugError(`[OpenAI] Error stack:`, error.stack);
+            }
             toolOutputs.push({
               tool_call_id: toolCall.id,
               output: JSON.stringify({ 
