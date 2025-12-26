@@ -3,7 +3,8 @@ import type { NextConfig } from 'next';
 // 使用預設 output（非 standalone），避免特殊輸出造成路由漏打包
 const nextConfig: NextConfig = {
   images: {
-    unoptimized: true, // 禁用圖片優化，直接使用原始 URL
+    loader: 'custom',
+    loaderFile: './lib/image-loader.ts',
     remotePatterns: [
       {
         protocol: 'https',
