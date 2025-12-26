@@ -87,27 +87,39 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
             // 解析價格格式：$$TWD$$1860$$ -> 1860（只使用台幣 TWD）
             let price = 0;
             const priceSource = item.price;
+            const productId = (item.tid || (item as { product_id?: unknown }).product_id || (item as { id?: unknown }).id || '') as string;
+            
             if (typeof priceSource === 'string') {
+              // 記錄原始價格字符串以便調試
+              console.log(`[Pinkoi Scraper] Product ${productId} raw price string: "${priceSource}"`);
+              
               // 優先匹配 TWD 價格
               const twdPriceMatch = priceSource.match(/\$\$TWD\$\$(\d+)\$\$/);
               if (twdPriceMatch) {
                 price = parseFloat(twdPriceMatch[1]);
+                console.log(`[Pinkoi Scraper] Product ${productId} TWD price: ${price}`);
               } else {
                 // 如果沒有 TWD，嘗試匹配其他貨幣格式（但記錄警告）
                 const anyPriceMatch = priceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
                 if (anyPriceMatch) {
                   const currency = anyPriceMatch[1];
                   const priceValue = parseFloat(anyPriceMatch[2]);
-                  console.warn(`[Pinkoi Scraper] Found ${currency} price ${priceValue} instead of TWD for product ${item.tid || item.product_id || 'unknown'}`);
+                  console.warn(`[Pinkoi Scraper] Product ${productId}: Found ${currency} price ${priceValue} instead of TWD, skipping this product`);
                   // 只接受 TWD，其他貨幣設為 0（會導致該商品被跳過）
                   price = 0;
                 } else {
-                  // 嘗試直接解析數字
-                  price = parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
+                  // 嘗試直接解析數字（這可能不安全，但用於調試）
+                  const parsedPrice = parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
+                  console.warn(`[Pinkoi Scraper] Product ${productId}: Could not parse price format "${priceSource}", parsed as ${parsedPrice}, skipping`);
+                  price = 0; // 設為 0 以跳過這個商品
                 }
               }
             } else if (typeof priceSource === 'number') {
+              console.warn(`[Pinkoi Scraper] Product ${productId}: Price is a number (${priceSource}), this is unusual, using it as-is`);
               price = priceSource;
+            } else {
+              console.warn(`[Pinkoi Scraper] Product ${productId}: Price is neither string nor number (type: ${typeof priceSource}), skipping`);
+              price = 0;
             }
             
             // 解析原價（只使用台幣 TWD）
