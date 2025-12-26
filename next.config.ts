@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: '**.pinkoi.com',
+      },
+      {
+        protocol: 'https',
         hostname: 'cf.shopee.tw',
       },
       {
