@@ -84,22 +84,52 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
         // 轉換為標準格式
         for (const item of items as Array<Record<string, unknown>>) {
           try {
-            // 解析價格格式：$$TWD$$1860$$ -> 1860
+            // 解析價格格式：$$TWD$$1860$$ -> 1860（只使用台幣 TWD）
             let price = 0;
             const priceSource = item.price;
             if (typeof priceSource === 'string') {
-              const priceMatch = priceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
-              price = priceMatch ? parseFloat(priceMatch[1]) : parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
+              // 優先匹配 TWD 價格
+              const twdPriceMatch = priceSource.match(/\$\$TWD\$\$(\d+)\$\$/);
+              if (twdPriceMatch) {
+                price = parseFloat(twdPriceMatch[1]);
+              } else {
+                // 如果沒有 TWD，嘗試匹配其他貨幣格式（但記錄警告）
+                const anyPriceMatch = priceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
+                if (anyPriceMatch) {
+                  const currency = anyPriceMatch[1];
+                  const priceValue = parseFloat(anyPriceMatch[2]);
+                  console.warn(`[Pinkoi Scraper] Found ${currency} price ${priceValue} instead of TWD for product ${item.tid || item.product_id || 'unknown'}`);
+                  // 只接受 TWD，其他貨幣設為 0（會導致該商品被跳過）
+                  price = 0;
+                } else {
+                  // 嘗試直接解析數字
+                  price = parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
+                }
+              }
             } else if (typeof priceSource === 'number') {
               price = priceSource;
             }
             
-            // 解析原價
+            // 解析原價（只使用台幣 TWD）
             let originalPrice: number | undefined;
             const opriceSource = item.oprice;
             if (typeof opriceSource === 'string') {
-              const opriceMatch = opriceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
-              originalPrice = opriceMatch ? parseFloat(opriceMatch[1]) : undefined;
+              // 優先匹配 TWD 價格
+              const twdOpriceMatch = opriceSource.match(/\$\$TWD\$\$(\d+)\$\$/);
+              if (twdOpriceMatch) {
+                originalPrice = parseFloat(twdOpriceMatch[1]);
+              } else {
+                // 如果沒有 TWD，嘗試匹配其他貨幣格式
+                const anyOpriceMatch = opriceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
+                if (anyOpriceMatch) {
+                  const currency = anyOpriceMatch[1];
+                  if (currency !== 'TWD') {
+                    console.warn(`[Pinkoi Scraper] Found ${currency} original price instead of TWD for product ${item.tid || item.product_id || 'unknown'}`);
+                  }
+                  // 只使用 TWD，其他貨幣設為 undefined
+                  originalPrice = undefined;
+                }
+              }
             } else if (typeof opriceSource === 'number') {
               originalPrice = opriceSource;
             }
@@ -457,10 +487,28 @@ export async function scrapePinkoiProductsPuppeteer(storeId: string = 'showartz'
                 const items = data.data?.products || data.products || [];
                 
                 for (const item of items) {
+                  // 解析價格（只使用 TWD）
+                  let price = 0;
+                  const priceSource = item.price;
+                  if (typeof priceSource === 'string') {
+                    const twdPriceMatch = priceSource.match(/\$\$TWD\$\$(\d+)\$\$/);
+                    if (twdPriceMatch) {
+                      price = parseFloat(twdPriceMatch[1]);
+                    } else {
+                      const anyPriceMatch = priceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
+                      if (anyPriceMatch && anyPriceMatch[1] !== 'TWD') {
+                        console.warn(`[Pinkoi Scraper] Puppeteer: Found ${anyPriceMatch[1]} price instead of TWD for product ${item.product_id || item.id || 'unknown'}`);
+                      }
+                      price = 0; // 非 TWD 價格設為 0
+                    }
+                  } else if (typeof priceSource === 'number') {
+                    price = priceSource;
+                  }
+                  
                   products.push({
                     product_id: item.product_id || item.id || '',
                     name: item.name || item.title || '',
-                    price: parseFloat(item.price || '0') || 0,
+                    price: price,
                     images: item.images || [],
                     url: item.url || `https://www.pinkoi.com/product/${item.product_id}`,
                   });
