@@ -28,6 +28,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cdn03.pinkoi.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'cf.shopee.tw',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.shopee.tw',
+      },
     ],
   },
 };
