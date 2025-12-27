@@ -41,11 +41,23 @@ const poolConfig = {
   connectionTimeoutMillis: 2000, // 連接超時（2秒）
 };
 
-const pool = new Pool(poolConfig);
+// Lazy initialization: 只有在實際使用時才創建 Pool，避免啟動時阻塞
+let poolInstance: Pool | null = null;
+
+function getPool(): Pool {
+  if (!poolInstance) {
+    poolInstance = new Pool(poolConfig);
+    // 添加錯誤處理，避免未處理的錯誤導致應用崩潰
+    poolInstance.on('error', (err) => {
+      console.error('[DB] Unexpected error on idle client', err);
+    });
+  }
+  return poolInstance;
+}
 
 // Initialize database schema
 export async function initDatabase() {
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     // Create videos table
     await client.query(`
@@ -146,12 +158,12 @@ export async function getAllVideos(category?: VideoCategory): Promise<Video[]> {
 
   query += ' ORDER BY display_order ASC, created_at DESC';
 
-  const result = await pool.query(query, params);
+  const result = await getPool().query(query, params);
   return result.rows;
 }
 
 export async function getVideoById(id: string): Promise<Video | null> {
-  const result = await pool.query('SELECT * FROM videos WHERE id = $1', [id]);
+  const result = await getPool().query('SELECT * FROM videos WHERE id = $1', [id]);
   return result.rows[0] || null;
 }
 
@@ -162,13 +174,13 @@ export async function createVideo(
   displayOrder?: number,
   thumbnailUrl?: string
 ): Promise<Video> {
-  const maxOrderResult = await pool.query(
+  const maxOrderResult = await getPool().query(
     'SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM videos WHERE category = $1',
     [category]
   );
   const nextOrder = displayOrder ?? maxOrderResult.rows[0].next_order;
 
-  const result = await pool.query(
+  const result = await getPool().query(
     `INSERT INTO videos (ig_url, title, thumbnail_url, category, display_order)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
@@ -209,7 +221,7 @@ export async function updateVideo(
   fields.push(`updated_at = CURRENT_TIMESTAMP`);
   values.push(id);
 
-  const result = await pool.query(
+  const result = await getPool().query(
     `UPDATE videos SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
     values
   );
@@ -217,13 +229,13 @@ export async function updateVideo(
 }
 
 export async function deleteVideo(id: string): Promise<boolean> {
-  const result = await pool.query('DELETE FROM videos WHERE id = $1', [id]);
+  const result = await getPool().query('DELETE FROM videos WHERE id = $1', [id]);
   return (result.rowCount ?? 0) > 0;
 }
 
 // Image operations
 export async function getAllImages(): Promise<Image[]> {
-  const result = await pool.query(
+  const result = await getPool().query(
     'SELECT * FROM images ORDER BY display_order ASC, created_at DESC'
   );
   return result.rows;
@@ -234,12 +246,12 @@ export async function createImage(
   description?: string,
   displayOrder?: number
 ): Promise<Image> {
-  const maxOrderResult = await pool.query(
+  const maxOrderResult = await getPool().query(
     'SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM images'
   );
   const nextOrder = displayOrder ?? maxOrderResult.rows[0].next_order;
 
-  const result = await pool.query(
+  const result = await getPool().query(
     `INSERT INTO images (image_url, description, display_order)
      VALUES ($1, $2, $3)
      RETURNING *`,
@@ -249,18 +261,18 @@ export async function createImage(
 }
 
 export async function deleteImage(id: string): Promise<boolean> {
-  const result = await pool.query('DELETE FROM images WHERE id = $1', [id]);
+  const result = await getPool().query('DELETE FROM images WHERE id = $1', [id]);
   return (result.rowCount ?? 0) > 0;
 }
 
 // Admin operations
 export async function getAdminUserByUsername(username: string): Promise<AdminUser | null> {
-  const result = await pool.query('SELECT * FROM admin_users WHERE username = $1', [username]);
+  const result = await getPool().query('SELECT * FROM admin_users WHERE username = $1', [username]);
   return result.rows[0] || null;
 }
 
 export async function createAdminUser(username: string, passwordHash: string): Promise<AdminUser> {
-  const result = await pool.query(
+  const result = await getPool().query(
     'INSERT INTO admin_users (username, password_hash) VALUES ($1, $2) RETURNING *',
     [username, passwordHash]
   );
@@ -320,17 +332,17 @@ export async function getAllProducts(filters?: {
     params.push(filters.offset);
   }
 
-  const result = await pool.query(query, params);
+  const result = await getPool().query(query, params);
   return result.rows;
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+  const result = await getPool().query('SELECT * FROM products WHERE id = $1', [id]);
   return result.rows[0] || null;
 }
 
 export async function getProductByShopeeId(shopeeItemId: number): Promise<Product | null> {
-  const result = await pool.query('SELECT * FROM products WHERE shopee_item_id = $1', [shopeeItemId]);
+  const result = await getPool().query('SELECT * FROM products WHERE shopee_item_id = $1', [shopeeItemId]);
   return result.rows[0] || null;
 }
 
@@ -350,7 +362,7 @@ export async function upsertProductFromShopee(productData: {
   sales_count?: number;
   rating?: number;
 }): Promise<Product> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `INSERT INTO products (
       shopee_item_id, shopee_shop_id, name, description, price, original_price,
       image_url, image_urls, shopee_url, category, tags, stock, sales_count, rating, last_synced_at
@@ -392,7 +404,7 @@ export async function upsertProductFromShopee(productData: {
 }
 
 export async function getProductByPinkoiId(pinkoiProductId: string): Promise<Product | null> {
-  const result = await pool.query('SELECT * FROM products WHERE pinkoi_product_id = $1', [pinkoiProductId]);
+  const result = await getPool().query('SELECT * FROM products WHERE pinkoi_product_id = $1', [pinkoiProductId]);
   return result.rows[0] || null;
 }
 
@@ -411,7 +423,7 @@ export async function upsertProductFromPinkoi(productData: {
   sales_count?: number;
   rating?: number;
 }): Promise<Product> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `INSERT INTO products (
       pinkoi_product_id, name, description, price, original_price,
       image_url, image_urls, pinkoi_url, category, tags, stock, sales_count, rating, last_synced_at
@@ -457,7 +469,7 @@ export async function searchProductsByTags(tags: string[]): Promise<Product[]> {
   }
   try {
     console.log('[DB] searchProductsByTags called with tags:', tags);
-    const result = await pool.query(
+    const result = await getPool().query(
       'SELECT * FROM products WHERE tags && $1 AND is_active = true ORDER BY sales_count DESC',
       [tags]
     );
@@ -496,7 +508,7 @@ export async function recommendProducts(criteria: {
 }
 
 export async function createProduct(productData: Partial<Product>): Promise<Product> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `INSERT INTO products (
       shopee_item_id, shopee_shop_id, name, description, price, original_price,
       image_url, image_urls, shopee_url, category, tags, stock, sales_count, rating
@@ -586,7 +598,7 @@ export async function updateProduct(
   fields.push(`updated_at = CURRENT_TIMESTAMP`);
   values.push(id);
 
-  const result = await pool.query(
+  const result = await getPool().query(
     `UPDATE products SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
     values
   );
@@ -594,7 +606,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  const result = await pool.query('DELETE FROM products WHERE id = $1', [id]);
+  const result = await getPool().query('DELETE FROM products WHERE id = $1', [id]);
   return (result.rowCount ?? 0) > 0;
 }
 
@@ -602,7 +614,7 @@ export async function deleteProduct(id: string): Promise<boolean> {
  * 獲取指定商店的所有 Shopee 商品 ID
  */
 export async function getShopeeProductIds(shopId: number): Promise<number[]> {
-  const result = await pool.query(
+  const result = await getPool().query(
     'SELECT shopee_item_id FROM products WHERE shopee_shop_id = $1 AND shopee_item_id IS NOT NULL',
     [shopId]
   );
@@ -613,7 +625,7 @@ export async function getShopeeProductIds(shopId: number): Promise<number[]> {
  * 獲取指定商店的所有 Pinkoi 商品 ID
  */
 export async function getPinkoiProductIds(): Promise<string[]> {
-  const result = await pool.query(
+  const result = await getPool().query(
     'SELECT pinkoi_product_id FROM products WHERE pinkoi_product_id IS NOT NULL',
     []
   );
@@ -627,7 +639,7 @@ export async function deactivateShopeeProducts(shopId: number, itemIds: number[]
   if (itemIds.length === 0) {
     return 0;
   }
-  const result = await pool.query(
+  const result = await getPool().query(
     `UPDATE products 
      SET is_active = false, updated_at = CURRENT_TIMESTAMP 
      WHERE shopee_shop_id = $1 AND shopee_item_id = ANY($2::bigint[])`,
@@ -643,7 +655,7 @@ export async function deactivatePinkoiProducts(productIds: string[]): Promise<nu
   if (productIds.length === 0) {
     return 0;
   }
-  const result = await pool.query(
+  const result = await getPool().query(
     `UPDATE products 
      SET is_active = false, updated_at = CURRENT_TIMESTAMP 
      WHERE pinkoi_product_id = ANY($1::text[])`,
@@ -651,6 +663,45 @@ export async function deactivatePinkoiProducts(productIds: string[]): Promise<nu
   );
   return result.rowCount ?? 0;
 }
+
+/**
+ * 清除占位圖片（如 space.gif），避免前端顯示假圖
+ */
+export async function clearPlaceholderImages(): Promise<number> {
+  const result = await getPool().query(
+    `
+    UPDATE products
+    SET image_url = NULL,
+        image_urls = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE image_url LIKE '%space.gif%'
+       OR EXISTS (
+         SELECT 1 FROM unnest(COALESCE(image_urls, ARRAY[]::text[])) u
+         WHERE u LIKE '%space.gif%'
+       )
+    `
+  );
+  return result.rowCount ?? 0;
+}
+
+/**
+ * 將沒有圖片的商品標記為下架（is_active = false）
+ */
+export async function deactivateProductsWithoutImages(): Promise<number> {
+  const result = await getPool().query(
+    `
+    UPDATE products
+    SET is_active = false,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE (image_url IS NULL OR image_url = '')
+      AND (image_urls IS NULL OR array_length(image_urls, 1) = 0)
+    `
+  );
+  return result.rowCount ?? 0;
+}
+
+// 為 default 匯出提供現成的 Pool 實例，符合原本 pool.query 的使用方式
+const pool = getPool();
 
 export default pool;
 

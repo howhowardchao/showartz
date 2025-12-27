@@ -3,7 +3,13 @@
  */
 
 import { scrapePinkoiStore } from './pinkoi-scraper';
-import { upsertProductFromPinkoi, getPinkoiProductIds, deactivatePinkoiProducts } from './db';
+import {
+  upsertProductFromPinkoi,
+  getPinkoiProductIds,
+  deactivatePinkoiProducts,
+  clearPlaceholderImages,
+  deactivateProductsWithoutImages,
+} from './db';
 
 export interface SyncResult {
   success: number;
@@ -47,14 +53,21 @@ export async function syncProductsFromPinkoi(storeId: string = 'showartz'): Prom
     // 將每個商品同步到資料庫
     for (const product of products) {
       try {
+        // 過濾掉占位圖片
+        const validImages = product.images?.filter(img => 
+          img && 
+          img.startsWith('http') && 
+          !img.includes('space.gif')
+        ) || [];
+        
         await upsertProductFromPinkoi({
           pinkoi_product_id: product.product_id,
           name: product.name,
           description: product.description,
           price: product.price,
           original_price: product.original_price,
-          image_url: product.images?.[0]?.startsWith('http') ? product.images[0] : undefined,
-          image_urls: product.images?.filter(img => img && img.startsWith('http')) || undefined,
+          image_url: validImages[0] || undefined,
+          image_urls: validImages.length > 0 ? validImages : undefined,
           pinkoi_url: product.url,
           category: product.category,
           tags: product.tags || [],
@@ -89,6 +102,14 @@ export async function syncProductsFromPinkoi(storeId: string = 'showartz'): Prom
       if (result.errors) {
         result.errors.push(`處理已下架商品時發生錯誤: ${toErrorMessage(error)}`);
       }
+    }
+
+    // 同步後的清理：移除占位圖，將無圖商品下架
+    const cleared = await clearPlaceholderImages();
+    const deactivatedNoImage = await deactivateProductsWithoutImages();
+    console.log(`Cleanup after sync: cleared ${cleared} placeholder images, deactivated ${deactivatedNoImage} products without images`);
+    if (result.errors) {
+      result.errors.push(`清理占位圖 ${cleared} 筆，下架無圖商品 ${deactivatedNoImage} 筆`);
     }
 
     console.log(`Pinkoi sync completed: ${result.success} success, ${result.failed} failed`);

@@ -691,7 +691,11 @@ showartz251120/
 3. **OpenAI API Key**：請妥善保管，避免洩露
 4. **IP 限流**：目前使用內存存儲，重啟後會重置。生產環境建議使用 Redis
 5. **商品同步**：Pinkoi 同步可能需要較長時間，請耐心等待
-6. **LOGO 設定**：請將 LOGO 圖片放在 `public/showartzlogo.*`
+6. **Pinkoi 同步清理（2025-12 更新）**：按下後台「同步 Pinkoi 商品」時，系統會：
+   - 重新抓取 Pinkoi 商品並過濾掉占位圖 `space.gif`
+   - 同步完成後，自動清理資料庫中的占位圖欄位（image_url / image_urls 會被設為 NULL）
+   - 將沒有任何圖片的商品標記為下架（is_active=false），前台不再顯示無圖商品
+7. **LOGO 設定**：請將 LOGO 圖片放在 `public/showartzlogo.*`
 
 ## 授權
 
