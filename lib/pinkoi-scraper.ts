@@ -289,7 +289,7 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
                   }
                 }
               }
-              if (productMap[productId] && productMap[productId].length > 0) {
+              if (productMap[productIdFromLink] && productMap[productIdFromLink].length > 0) {
                 break; // 找到圖片就停止
               }
               current = current.parentElement;
