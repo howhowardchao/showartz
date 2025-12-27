@@ -1,9 +1,5 @@
 'use client';
 
-// 避免被快取，確保最新價格與顯示
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 import { useState, useEffect } from 'react';
 import { Product } from '@/lib/types';
 import ProductCard from '@/components/ProductCard';
