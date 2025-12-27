@@ -93,6 +93,10 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
             } else if (typeof priceSource === 'number') {
               price = priceSource;
             }
+            // Pinkoi API 部分商品價格可能以「乘以 10」的單位回傳（例如 22156 應為 2215.6），這裡做防呆校正
+            if (price > 10000) {
+              price = Math.round(price / 10);
+            }
             
             // 解析原價
             let originalPrice: number | undefined;
@@ -102,6 +106,9 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
               originalPrice = opriceMatch ? parseFloat(opriceMatch[1]) : undefined;
             } else if (typeof opriceSource === 'number') {
               originalPrice = opriceSource;
+            }
+            if (originalPrice && originalPrice > 10000) {
+              originalPrice = Math.round(originalPrice / 10);
             }
             
             // 構建商品 URL
