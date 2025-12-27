@@ -134,7 +134,7 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
             }
             
             const product: PinkoiProduct = {
-              product_id: productId,
+              product_id: productIdFromItem,
               name: (item.title as string) || (item.name as string) || (item.product_name as string) || '',
               description: (item.description as string) || (item.desc as string) || (item.summary as string) || undefined,
               price: price,
