@@ -127,10 +127,10 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
             }
             
             // 如果沒有圖片，直接構建 Pinkoi 的標準圖片 URL
-            if (images.length === 0 && productId) {
+            if (images.length === 0 && productIdFromItem) {
               // Pinkoi 的圖片格式：https://cdn01.pinkoi.com/product/[tid]/0/800x0.jpg
               // 使用標準格式構建圖片 URL
-              images.push(`https://cdn01.pinkoi.com/product/${productId}/0/800x0.jpg`);
+              images.push(`https://cdn01.pinkoi.com/product/${productIdFromItem}/0/800x0.jpg`);
             }
             
             const product: PinkoiProduct = {
