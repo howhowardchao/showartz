@@ -60,7 +60,7 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products', { cache: 'no-store' });
+      const response = await fetch(`/api/products?ts=${Date.now()}`, { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         setProducts(data);
