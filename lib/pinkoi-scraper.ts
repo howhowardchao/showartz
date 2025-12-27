@@ -93,24 +93,42 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
               // 記錄原始價格字符串以便調試
               console.log(`[Pinkoi Scraper] Product ${productId} raw price string: "${priceSource}"`);
               
-              // 優先匹配 TWD 價格
-              const twdPriceMatch = priceSource.match(/\$\$TWD\$\$(\d+)\$\$/);
-              if (twdPriceMatch) {
-                price = parseFloat(twdPriceMatch[1]);
-                console.log(`[Pinkoi Scraper] Product ${productId} TWD price: ${price}`);
-              } else {
-                // 如果沒有 TWD，嘗試匹配其他貨幣格式（但記錄警告）
-                const anyPriceMatch = priceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
-                if (anyPriceMatch) {
-                  const currency = anyPriceMatch[1];
-                  const priceValue = parseFloat(anyPriceMatch[2]);
-                  console.warn(`[Pinkoi Scraper] Product ${productId}: Found ${currency} price ${priceValue} instead of TWD, skipping this product`);
-                  // 只接受 TWD，其他貨幣設為 0（會導致該商品被跳過）
-                  price = 0;
+              // 優先查找 TWD 價格：查找 $$TWD$$數字$$ 的模式
+              // 使用字符串方法而不是正則表達式，避免轉義問題
+              const twdIndex = priceSource.indexOf('$$TWD$$');
+              if (twdIndex !== -1) {
+                // 找到 TWD，提取後面的數字
+                const afterTWD = priceSource.substring(twdIndex + 7); // '$$TWD$$'.length = 7
+                // 查找數字後的 $$ 來確定數字範圍
+                const endIndex = afterTWD.indexOf('$$');
+                if (endIndex !== -1) {
+                  const priceStr = afterTWD.substring(0, endIndex);
+                  const parsedPrice = parseFloat(priceStr);
+                  if (!isNaN(parsedPrice) && parsedPrice > 0) {
+                    price = parsedPrice;
+                    console.log(`[Pinkoi Scraper] Product ${productId} TWD price: ${price}`);
+                  } else {
+                    console.warn(`[Pinkoi Scraper] Product ${productId}: Invalid TWD price value: "${priceStr}"`);
+                    price = 0;
+                  }
                 } else {
-                  // 嘗試直接解析數字（這可能不安全，但用於調試）
-                  const parsedPrice = parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
-                  console.warn(`[Pinkoi Scraper] Product ${productId}: Could not parse price format "${priceSource}", parsed as ${parsedPrice}, skipping`);
+                  console.warn(`[Pinkoi Scraper] Product ${productId}: TWD price format incomplete: "${priceSource}"`);
+                  price = 0;
+                }
+              } else {
+                // 沒有找到 TWD，檢查是否有其他貨幣
+                const hasOtherCurrency = priceSource.includes('$$JPY$$') || priceSource.includes('$$USD$$') || priceSource.includes('$$HKD$$');
+                if (hasOtherCurrency) {
+                  // 提取貨幣類型
+                  const currencyMatch = priceSource.match(/\$\$([A-Z]{3})\$\$/);
+                  if (currencyMatch) {
+                    const currency = currencyMatch[1];
+                    console.warn(`[Pinkoi Scraper] Product ${productId}: Found ${currency} price instead of TWD, skipping this product. Price string: "${priceSource}"`);
+                  }
+                  price = 0; // 只接受 TWD，其他貨幣設為 0（會導致該商品被跳過）
+                } else {
+                  // 無法識別的格式
+                  console.warn(`[Pinkoi Scraper] Product ${productId}: Could not parse price format "${priceSource}", skipping`);
                   price = 0; // 設為 0 以跳過這個商品
                 }
               }
@@ -126,21 +144,22 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
             let originalPrice: number | undefined;
             const opriceSource = item.oprice;
             if (typeof opriceSource === 'string') {
-              // 優先匹配 TWD 價格
-              const twdOpriceMatch = opriceSource.match(/\$\$TWD\$\$(\d+)\$\$/);
-              if (twdOpriceMatch) {
-                originalPrice = parseFloat(twdOpriceMatch[1]);
-              } else {
-                // 如果沒有 TWD，嘗試匹配其他貨幣格式
-                const anyOpriceMatch = opriceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
-                if (anyOpriceMatch) {
-                  const currency = anyOpriceMatch[1];
-                  if (currency !== 'TWD') {
-                    console.warn(`[Pinkoi Scraper] Found ${currency} original price instead of TWD for product ${item.tid || item.product_id || 'unknown'}`);
+              // 優先查找 TWD 價格
+              const twdIndex = opriceSource.indexOf('$$TWD$$');
+              if (twdIndex !== -1) {
+                // 找到 TWD，提取後面的數字
+                const afterTWD = opriceSource.substring(twdIndex + 7);
+                const endIndex = afterTWD.indexOf('$$');
+                if (endIndex !== -1) {
+                  const priceStr = afterTWD.substring(0, endIndex);
+                  const parsedPrice = parseFloat(priceStr);
+                  if (!isNaN(parsedPrice) && parsedPrice > 0) {
+                    originalPrice = parsedPrice;
                   }
-                  // 只使用 TWD，其他貨幣設為 undefined
-                  originalPrice = undefined;
                 }
+              } else {
+                // 沒有 TWD，忽略原價
+                originalPrice = undefined;
               }
             } else if (typeof opriceSource === 'number') {
               originalPrice = opriceSource;
@@ -499,17 +518,27 @@ export async function scrapePinkoiProductsPuppeteer(storeId: string = 'showartz'
                 const items = data.data?.products || data.products || [];
                 
                 for (const item of items) {
-                  // 解析價格（只使用 TWD）
+                  // 解析價格（只使用 TWD）- 使用字符串方法避免正則表達式問題
                   let price = 0;
                   const priceSource = item.price;
                   if (typeof priceSource === 'string') {
-                    const twdPriceMatch = priceSource.match(/\$\$TWD\$\$(\d+)\$\$/);
-                    if (twdPriceMatch) {
-                      price = parseFloat(twdPriceMatch[1]);
+                    const twdIndex = priceSource.indexOf('$$TWD$$');
+                    if (twdIndex !== -1) {
+                      // 找到 TWD，提取後面的數字
+                      const afterTWD = priceSource.substring(twdIndex + 7);
+                      const endIndex = afterTWD.indexOf('$$');
+                      if (endIndex !== -1) {
+                        const priceStr = afterTWD.substring(0, endIndex);
+                        const parsedPrice = parseFloat(priceStr);
+                        if (!isNaN(parsedPrice) && parsedPrice > 0) {
+                          price = parsedPrice;
+                        }
+                      }
                     } else {
-                      const anyPriceMatch = priceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
-                      if (anyPriceMatch && anyPriceMatch[1] !== 'TWD') {
-                        console.warn(`[Pinkoi Scraper] Puppeteer: Found ${anyPriceMatch[1]} price instead of TWD for product ${item.product_id || item.id || 'unknown'}`);
+                      // 沒有 TWD 價格
+                      const hasOtherCurrency = priceSource.includes('$$JPY$$') || priceSource.includes('$$USD$$');
+                      if (hasOtherCurrency) {
+                        console.warn(`[Pinkoi Scraper] Puppeteer: Found non-TWD price for product ${item.product_id || item.id || 'unknown'}, skipping`);
                       }
                       price = 0; // 非 TWD 價格設為 0
                     }
