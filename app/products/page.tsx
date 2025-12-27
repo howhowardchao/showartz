@@ -1,5 +1,9 @@
 'use client';
 
+// 避免被快取，確保最新價格與顯示
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { useState, useEffect } from 'react';
 import { Product } from '@/lib/types';
 import ProductCard from '@/components/ProductCard';
@@ -60,7 +64,7 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch('/api/products', { cache: 'no-store' });
       if (response.ok) {
         const data = await response.json();
         setProducts(data);
