@@ -84,83 +84,22 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
         // 轉換為標準格式
         for (const item of items as Array<Record<string, unknown>>) {
           try {
-            // 解析價格格式：$$TWD$$1860$$ -> 1860（只使用台幣 TWD）
+            // 解析價格格式：$$TWD$$1860$$ -> 1860
             let price = 0;
             const priceSource = item.price;
-            const productId = (item.tid || (item as { product_id?: unknown }).product_id || (item as { id?: unknown }).id || '') as string;
-            
             if (typeof priceSource === 'string') {
-              // 記錄原始價格字符串以便調試
-              console.log(`[Pinkoi Scraper] Product ${productId} raw price string: "${priceSource}"`);
-              
-              // 優先查找 TWD 價格：查找 $$TWD$$數字$$ 的模式
-              // 使用字符串方法而不是正則表達式，避免轉義問題
-              const twdIndex = priceSource.indexOf('$$TWD$$');
-              if (twdIndex !== -1) {
-                // 找到 TWD，提取後面的數字
-                const afterTWD = priceSource.substring(twdIndex + 7); // '$$TWD$$'.length = 7
-                // 查找數字後的 $$ 來確定數字範圍
-                const endIndex = afterTWD.indexOf('$$');
-                if (endIndex !== -1) {
-                  const priceStr = afterTWD.substring(0, endIndex);
-                  const parsedPrice = parseFloat(priceStr);
-                  if (!isNaN(parsedPrice) && parsedPrice > 0) {
-                    price = parsedPrice;
-                    console.log(`[Pinkoi Scraper] Product ${productId} TWD price: ${price}`);
-                  } else {
-                    console.warn(`[Pinkoi Scraper] Product ${productId}: Invalid TWD price value: "${priceStr}"`);
-                    price = 0;
-                  }
-                } else {
-                  console.warn(`[Pinkoi Scraper] Product ${productId}: TWD price format incomplete: "${priceSource}"`);
-                  price = 0;
-                }
-              } else {
-                // 沒有找到 TWD，檢查是否有其他貨幣
-                const hasOtherCurrency = priceSource.includes('$$JPY$$') || priceSource.includes('$$USD$$') || priceSource.includes('$$HKD$$');
-                if (hasOtherCurrency) {
-                  // 提取貨幣類型
-                  const currencyMatch = priceSource.match(/\$\$([A-Z]{3})\$\$/);
-                  if (currencyMatch) {
-                    const currency = currencyMatch[1];
-                    console.warn(`[Pinkoi Scraper] Product ${productId}: Found ${currency} price instead of TWD, skipping this product. Price string: "${priceSource}"`);
-                  }
-                  price = 0; // 只接受 TWD，其他貨幣設為 0（會導致該商品被跳過）
-                } else {
-                  // 無法識別的格式
-                  console.warn(`[Pinkoi Scraper] Product ${productId}: Could not parse price format "${priceSource}", skipping`);
-                  price = 0; // 設為 0 以跳過這個商品
-                }
-              }
+              const priceMatch = priceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
+              price = priceMatch ? parseFloat(priceMatch[1]) : parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
             } else if (typeof priceSource === 'number') {
-              console.warn(`[Pinkoi Scraper] Product ${productId}: Price is a number (${priceSource}), this is unusual, using it as-is`);
               price = priceSource;
-            } else {
-              console.warn(`[Pinkoi Scraper] Product ${productId}: Price is neither string nor number (type: ${typeof priceSource}), skipping`);
-              price = 0;
             }
             
-            // 解析原價（只使用台幣 TWD）
+            // 解析原價
             let originalPrice: number | undefined;
             const opriceSource = item.oprice;
             if (typeof opriceSource === 'string') {
-              // 優先查找 TWD 價格
-              const twdIndex = opriceSource.indexOf('$$TWD$$');
-              if (twdIndex !== -1) {
-                // 找到 TWD，提取後面的數字
-                const afterTWD = opriceSource.substring(twdIndex + 7);
-                const endIndex = afterTWD.indexOf('$$');
-                if (endIndex !== -1) {
-                  const priceStr = afterTWD.substring(0, endIndex);
-                  const parsedPrice = parseFloat(priceStr);
-                  if (!isNaN(parsedPrice) && parsedPrice > 0) {
-                    originalPrice = parsedPrice;
-                  }
-                }
-              } else {
-                // 沒有 TWD，忽略原價
-                originalPrice = undefined;
-              }
+              const opriceMatch = opriceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
+              originalPrice = opriceMatch ? parseFloat(opriceMatch[1]) : undefined;
             } else if (typeof opriceSource === 'number') {
               originalPrice = opriceSource;
             }
@@ -171,16 +110,20 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
               : `https://www.pinkoi.com/product/${(item as { product_id?: unknown; id?: unknown }).product_id || (item as { id?: unknown }).id}`;
             
             // 構建圖片 URL - Pinkoi 的圖片格式：https://cdn01.pinkoi.com/product/[tid]/0/800x0.jpg
-            const productId = (item.tid || (item as { product_id?: unknown }).product_id || (item as { id?: unknown }).id || '') as string;
+            // 主要來源使用 tid，其次 product_id，再次 id，避免重覆定義
+            const productIdFromItem = (item.tid || (item as { product_id?: unknown }).product_id || (item as { id?: unknown }).id || '') as string;
             const images: string[] = [];
             
             // 嘗試從 item 中提取圖片（如果有的話）
             if (Array.isArray((item as { images?: unknown }).images)) {
-              images.push(...((item as { images: string[] }).images));
+              images.push(...((item as { images: string[] }).images.filter(img => !img.includes('space.gif'))));
             } else if (Array.isArray((item as { image_urls?: unknown }).image_urls)) {
-              images.push(...((item as { image_urls: string[] }).image_urls));
+              images.push(...((item as { image_urls: string[] }).image_urls.filter(img => !img.includes('space.gif'))));
             } else if (typeof (item as { image?: unknown }).image === 'string') {
-              images.push((item as { image: string }).image);
+              const imageUrl = (item as { image: string }).image;
+              if (!imageUrl.includes('space.gif')) {
+                images.push(imageUrl);
+              }
             }
             
             // 如果沒有圖片，直接構建 Pinkoi 的標準圖片 URL
@@ -317,7 +260,7 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
           const href = link.getAttribute('href') || link.href || '';
           const match = href.match(/\/product\/([^\/\?]+)/);
           if (match) {
-            const productId = match[1];
+            const productIdFromLink = match[1];
             
             // 向上查找父元素中的圖片（最多向上 5 層）
             let current: HTMLElement | null = link;
@@ -325,7 +268,7 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
               const imgs = current.querySelectorAll<HTMLImageElement>('img');
               for (const img of Array.from(imgs)) {
                 const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
-                if (src && (src.includes('cdn') || src.includes('pinkoi')) && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner')) {
+                if (src && (src.includes('cdn') || src.includes('pinkoi')) && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner') && !src.includes('space.gif')) {
                   let fullUrl = src;
                   if (!fullUrl.startsWith('http')) {
                     fullUrl = fullUrl.startsWith('//') ? `https:${fullUrl}` : `https://www.pinkoi.com${fullUrl}`;
@@ -338,11 +281,11 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
                     fullUrl = fullUrl.replace(/\.(jpg|png|webp|avif)/, '/800x0.$1');
                   }
                   
-                  if (!productMap[productId]) {
-                    productMap[productId] = [];
+                  if (!productMap[productIdFromLink]) {
+                    productMap[productIdFromLink] = [];
                   }
-                  if (!productMap[productId].includes(fullUrl)) {
-                    productMap[productId].push(fullUrl);
+                  if (!productMap[productIdFromLink].includes(fullUrl)) {
+                    productMap[productIdFromLink].push(fullUrl);
                   }
                 }
               }
@@ -358,11 +301,11 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
         const allImages = document.querySelectorAll<HTMLImageElement>('img');
         allImages.forEach((img) => {
           const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
-          if (src && src.includes('product') && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner')) {
+          if (src && src.includes('product') && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner') && !src.includes('space.gif')) {
             // 從圖片 URL 中提取商品 ID：/product/[productId]/...
             const match = src.match(/\/product\/([^\/]+)\//);
             if (match) {
-              const productId = match[1];
+              const productIdFromImg = match[1];
               let fullUrl = src.startsWith('http') ? src : (src.startsWith('//') ? `https:${src}` : `https://www.pinkoi.com${src}`);
               
               // 優化圖片 URL
@@ -371,11 +314,11 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
                 fullUrl = fullUrl.replace(/\.(jpg|png|webp|avif)/, '/800x0.$1');
               }
               
-              if (!productMap[productId]) {
-                productMap[productId] = [];
+              if (!productMap[productIdFromImg]) {
+                productMap[productIdFromImg] = [];
               }
-              if (!productMap[productId].includes(fullUrl)) {
-                productMap[productId].push(fullUrl);
+              if (!productMap[productIdFromImg].includes(fullUrl)) {
+                productMap[productIdFromImg].push(fullUrl);
               }
             }
           }
@@ -388,8 +331,8 @@ async function fetchProductImages(products: PinkoiProduct[], storeId: string): P
       let foundCount = 0;
       for (const product of products) {
         if (productImages[product.product_id] && productImages[product.product_id].length > 0) {
-          // 使用從頁面提取的圖片
-          product.images = productImages[product.product_id];
+          // 使用從頁面提取的圖片，並過濾掉占位圖片
+          product.images = productImages[product.product_id].filter(img => !img.includes('space.gif'));
           foundCount++;
           console.log(`[Pinkoi Scraper] Product ${product.product_id}: Using extracted image`);
         } else {
@@ -444,7 +387,7 @@ async function fetchImagesFromDetailPages(products: PinkoiProduct[], page: PageL
         
         imgElements.forEach((img) => {
           const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
-          if (src && (src.includes('product') || src.includes('cdn')) && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner')) {
+          if (src && (src.includes('product') || src.includes('cdn')) && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar') && !src.includes('banner') && !src.includes('space.gif')) {
             let fullUrl = src.startsWith('http') ? src : (src.startsWith('//') ? `https:${src}` : `https://www.pinkoi.com${src}`);
             // 確保使用高解析度圖片
             fullUrl = fullUrl.replace(/\/\d+x\d+\.(jpg|png|webp|avif)/, '/800x0.$1');
@@ -518,38 +461,10 @@ export async function scrapePinkoiProductsPuppeteer(storeId: string = 'showartz'
                 const items = data.data?.products || data.products || [];
                 
                 for (const item of items) {
-                  // 解析價格（只使用 TWD）- 使用字符串方法避免正則表達式問題
-                  let price = 0;
-                  const priceSource = item.price;
-                  if (typeof priceSource === 'string') {
-                    const twdIndex = priceSource.indexOf('$$TWD$$');
-                    if (twdIndex !== -1) {
-                      // 找到 TWD，提取後面的數字
-                      const afterTWD = priceSource.substring(twdIndex + 7);
-                      const endIndex = afterTWD.indexOf('$$');
-                      if (endIndex !== -1) {
-                        const priceStr = afterTWD.substring(0, endIndex);
-                        const parsedPrice = parseFloat(priceStr);
-                        if (!isNaN(parsedPrice) && parsedPrice > 0) {
-                          price = parsedPrice;
-                        }
-                      }
-                    } else {
-                      // 沒有 TWD 價格
-                      const hasOtherCurrency = priceSource.includes('$$JPY$$') || priceSource.includes('$$USD$$');
-                      if (hasOtherCurrency) {
-                        console.warn(`[Pinkoi Scraper] Puppeteer: Found non-TWD price for product ${item.product_id || item.id || 'unknown'}, skipping`);
-                      }
-                      price = 0; // 非 TWD 價格設為 0
-                    }
-                  } else if (typeof priceSource === 'number') {
-                    price = priceSource;
-                  }
-                  
                   products.push({
                     product_id: item.product_id || item.id || '',
                     name: item.name || item.title || '',
-                    price: price,
+                    price: parseFloat(item.price || '0') || 0,
                     images: item.images || [],
                     url: item.url || `https://www.pinkoi.com/product/${item.product_id}`,
                   });
