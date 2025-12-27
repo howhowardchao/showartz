@@ -82,34 +82,33 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
         }
         
         // 轉換為標準格式
+        // 匯率設定：Pinkoi API 回傳目前是 JPY，需轉換為 TWD 才符合前台顯示
+        const JPY_TO_TWD_RATE = parseFloat(process.env.PINKOI_JPY_TO_TWD_RATE || '0.22');
+
+        const parsePrice = (priceSource: unknown): number => {
+          if (typeof priceSource === 'string') {
+            const priceMatch = priceSource.match(/\$\$([A-Z]+)\$\$(\d+)\$\$/);
+            if (priceMatch) {
+              const currency = priceMatch[1];
+              const amount = parseFloat(priceMatch[2]);
+              if (currency === 'JPY') return Math.round(amount * JPY_TO_TWD_RATE);
+              return amount;
+            }
+            return parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
+          } else if (typeof priceSource === 'number') {
+            return priceSource;
+          }
+          return 0;
+        };
+
         for (const item of items as Array<Record<string, unknown>>) {
           try {
-            // 解析價格格式：$$TWD$$1860$$ -> 1860
-            let price = 0;
-            const priceSource = item.price;
-            if (typeof priceSource === 'string') {
-              const priceMatch = priceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
-              price = priceMatch ? parseFloat(priceMatch[1]) : parseFloat(priceSource.replace(/[^\d.]/g, '')) || 0;
-            } else if (typeof priceSource === 'number') {
-              price = priceSource;
-            }
-            // Pinkoi API 部分商品價格可能以「乘以 10」的單位回傳（例如 22156 應為 2215.6），這裡做防呆校正
-            if (price > 10000) {
-              price = Math.round(price / 10);
-            }
+            // 解析價格並轉成 TWD
+            const price = parsePrice(item.price);
             
             // 解析原價
-            let originalPrice: number | undefined;
-            const opriceSource = item.oprice;
-            if (typeof opriceSource === 'string') {
-              const opriceMatch = opriceSource.match(/\$\$[A-Z]+\$\$(\d+)\$\$/);
-              originalPrice = opriceMatch ? parseFloat(opriceMatch[1]) : undefined;
-            } else if (typeof opriceSource === 'number') {
-              originalPrice = opriceSource;
-            }
-            if (originalPrice && originalPrice > 10000) {
-              originalPrice = Math.round(originalPrice / 10);
-            }
+            const parsedOriginal = parsePrice(item.oprice);
+            const originalPrice = parsedOriginal > 0 ? parsedOriginal : undefined;
             
             // 構建商品 URL
             const productUrl = item.tid 
