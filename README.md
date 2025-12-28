@@ -696,6 +696,7 @@ showartz251120/
    - 同步完成後，自動清理資料庫中的占位圖欄位（image_url / image_urls 會被設為 NULL）
    - 將沒有任何圖片的商品標記為下架（is_active=false），前台不再顯示無圖商品
 7. **LOGO 設定**：請將 LOGO 圖片放在 `public/showartzlogo.*`
+8. **Pinkoi 幣別來源差異**：主機位於日本時，Pinkoi API 常回傳日幣 (JPY)，需透過 Header/Cookie 或換算為 TWD；本機（台灣）通常直接取得 TWD。若要避免換算，建議將主機設於台灣（例：Vultr 台北節點），直接取得 TWD 價格。
 
 ## 授權
 
