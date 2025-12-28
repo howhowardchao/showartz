@@ -31,7 +31,7 @@ export default function SpacePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-magic-gold font-magic text-xl magic-sparkle">
+        <div className="text-[var(--primary)] font-semibold text-xl">
           載入中...
         </div>
       </div>
@@ -40,18 +40,36 @@ export default function SpacePage() {
 
   return (
     <div className="min-h-screen">
-      <div className="text-center mb-12 pt-12 md:pt-16">
-        <h1 className="text-4xl md:text-5xl font-magic text-magic-gold mb-4">
-          故事
-        </h1>
-        <p className="text-magic-gold-light text-lg md:text-xl max-w-2xl mx-auto">
-          探索藝棧的魔法故事，感受每一處的奇幻氛圍
-        </p>
-      </div>
+      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14">
+        {/* 背景插圖全幅覆蓋 */}
+        <div className="pointer-events-none absolute inset-0 opacity-70 md:opacity-70">
+          <Image
+            src="/images/hero-illustration.png"
+            alt="藝棧 Showartz 插圖"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
+        </div>
+        <div className="relative z-10 container mx-auto px-4">
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-[var(--muted)] shadow-sm">
+              故事
+            </div>
+            <h1 className="mt-4 text-3xl md:text-4xl font-semibold text-[var(--foreground)] leading-tight">
+              故事
+            </h1>
+            <p className="mt-3 text-base md:text-lg text-[var(--muted)] leading-relaxed max-w-2xl">
+              探索藝棧的故事與靈感，感受每一處的奇幻氛圍。
+            </p>
+          </div>
+        </div>
+      </section>
 
       {images.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-magic-gold-light text-lg font-magic">
+          <p className="text-[var(--foreground)] text-lg font-semibold">
             目前沒有故事圖文
           </p>
         </div>
@@ -70,11 +88,11 @@ export default function SpacePage() {
             return (
               <div
                 key={image.id}
-                className="bg-magic-purple/20 rounded-lg overflow-hidden border border-magic-purple/30 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:border-magic-gold/50 magic-glow flex flex-col"
+                className="bg-white rounded-lg overflow-hidden border border-[var(--border)] cursor-pointer transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col"
                 onClick={() => setSelectedImage(image)}
               >
                 {/* 圖片區域 */}
-                <div className="aspect-square bg-magic-dark/50 relative overflow-hidden">
+                <div className="aspect-square bg-[var(--border)]/50 relative overflow-hidden">
                   <Image
                     src={image.image_url}
                     alt={image.description || '故事照片'}
@@ -88,7 +106,7 @@ export default function SpacePage() {
                 {/* 文字預覽區域 */}
                 {previewText && (
                   <div className="p-3 md:p-4 flex-1 flex flex-col justify-start">
-                    <p className="text-magic-gold-light text-xs md:text-sm leading-relaxed line-clamp-4">
+                    <p className="text-[var(--muted)] text-xs md:text-sm leading-relaxed line-clamp-4">
                       {previewText}
                     </p>
                   </div>

@@ -56,3 +56,33 @@ export interface ProductRecommendation {
   usage_suggestion?: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  nickname?: string;
+  avatar_url?: string;
+  email_verified: boolean;
+  status: string;
+  membership_level: string;
+  total_points: number;
+  total_spent: number;
+  created_at: Date;
+  updated_at: Date;
+  last_login_at?: Date;
+}
+
+export interface Address {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  postal_code: string;
+  country: string;
+  is_default: boolean;
+  created_at: Date;
+}
+

@@ -187,11 +187,7 @@ export default function ProductManager() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('zh-TW', {
-      style: 'currency',
-      currency: 'TWD',
-      minimumFractionDigits: 0,
-    }).format(price);
+    return `NT$${price.toLocaleString('zh-TW')}`;
   };
 
   if (loading) {

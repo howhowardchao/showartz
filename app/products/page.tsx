@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Product } from '@/lib/types';
 import ProductCard from '@/components/ProductCard';
 import { ExternalLink, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -125,7 +126,7 @@ export default function ProductsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-magic-gold font-magic text-xl magic-sparkle">
+        <div className="text-[var(--primary)] font-semibold text-xl">
           載入中...
         </div>
       </div>
@@ -134,61 +135,76 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="text-center mb-8 pt-12 md:pt-16">
-        <h1 className="text-4xl md:text-5xl font-magic text-magic-gold mb-4">
-          商品
-        </h1>
-        <p className="text-magic-gold-light text-lg md:text-xl max-w-2xl mx-auto mb-8">
-          探索我們的奇趣商品，特別是貓頭鷹造型系列包
-        </p>
-      </div>
-
-      {/* 賣場連結 */}
-      <div className="max-w-6xl mx-auto mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <a
-            href={shopeeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-magic-purple/20 rounded-lg border border-magic-gold/30 p-6 backdrop-blur-sm magic-glow hover:border-magic-gold transition-all duration-300 transform hover:scale-105"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-magic text-magic-gold mb-2">蝦皮賣場</h3>
-                <p className="text-magic-gold-light text-sm">前往我們的蝦皮商店選購</p>
-              </div>
-              <ExternalLink className="w-6 h-6 text-magic-gold" />
-            </div>
-          </a>
-          <a
-            href={pinkoiUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-magic-purple/20 rounded-lg border border-magic-gold/30 p-6 backdrop-blur-sm magic-glow hover:border-magic-gold transition-all duration-300 transform hover:scale-105"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-magic text-magic-gold mb-2">Pinkoi 賣場</h3>
-                <p className="text-magic-gold-light text-sm">前往我們的 Pinkoi 商店選購</p>
-              </div>
-              <ExternalLink className="w-6 h-6 text-magic-gold" />
-            </div>
-          </a>
+      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14">
+        {/* 背景插圖全幅覆蓋 */}
+        <div className="pointer-events-none absolute inset-0 opacity-70 md:opacity-70">
+          <Image
+            src="/images/hero-illustration.png"
+            alt="藝棧 Showartz 插圖"
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+          />
         </div>
-      </div>
+        <div className="relative z-10 container mx-auto px-4">
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-[var(--muted)] shadow-sm">
+              精選商品
+            </div>
+            <h1 className="mt-4 text-3xl md:text-4xl font-semibold text-[var(--foreground)] leading-tight">
+              商品
+            </h1>
+            <p className="mt-4 text-base md:text-lg text-[var(--muted)] leading-relaxed max-w-2xl">
+              探索我們的奇趣商品，特別是貓頭鷹造型系列包。
+            </p>
+          </div>
+
+          <div className="mt-8 md:mt-10 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
+            <a
+              href={shopeeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white/90 backdrop-blur-sm rounded-lg border border-[var(--border)] p-6 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">蝦皮賣場</h3>
+                  <p className="text-[var(--muted)] text-sm">前往我們的蝦皮商店選購</p>
+                </div>
+                <ExternalLink className="w-6 h-6 text-[var(--primary)]" />
+              </div>
+            </a>
+            <a
+              href={pinkoiUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white/90 backdrop-blur-sm rounded-lg border border-[var(--border)] p-6 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">Pinkoi 賣場</h3>
+                  <p className="text-[var(--muted)] text-sm">前往我們的 Pinkoi 商店選購</p>
+                </div>
+                <ExternalLink className="w-6 h-6 text-[var(--primary)]" />
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* 排序和分類篩選 */}
       <div className="max-w-6xl mx-auto mb-6">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-magic-purple/20 rounded-lg border border-magic-gold/30 p-4 backdrop-blur-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white rounded-lg border border-[var(--border)] p-4 shadow-sm">
           <div className="flex items-center gap-4 flex-wrap">
-            <label className="text-magic-gold-light font-magic flex items-center gap-2">
+            <label className="text-[var(--muted)] font-semibold flex items-center gap-2">
               <ArrowUpDown className="w-4 h-4" />
               排序：
             </label>
             <select
               value={sortOption}
               onChange={(e) => setSortOption(e.target.value as SortOption)}
-              className="bg-magic-dark border border-magic-purple/30 rounded-lg px-4 py-2 text-magic-gold-light focus:outline-none focus:border-magic-gold"
+              className="bg-white border border-[var(--border)] rounded-lg px-4 py-2 text-[var(--foreground)] focus:outline-none focus:border-[var(--primary)]"
             >
               <option value="default">預設（銷售量）</option>
               <option value="price-asc">價格：低到高</option>
@@ -201,11 +217,11 @@ export default function ProductsPage() {
 
           {categories.length > 0 && (
             <div className="flex items-center gap-4 flex-wrap">
-              <label className="text-magic-gold-light font-magic">分類：</label>
+              <label className="text-[var(--muted)] font-semibold">分類：</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-magic-dark border border-magic-purple/30 rounded-lg px-4 py-2 text-magic-gold-light focus:outline-none focus:border-magic-gold"
+                className="bg-white border border-[var(--border)] rounded-lg px-4 py-2 text-[var(--foreground)] focus:outline-none focus:border-[var(--primary)]"
               >
                 <option value="all">全部</option>
                 {categories.map(cat => (
@@ -215,7 +231,7 @@ export default function ProductsPage() {
             </div>
           )}
 
-          <div className="text-magic-gold-light text-sm">
+          <div className="text-[var(--muted)] text-sm">
             共 {filteredProducts.length} 個商品
             {filteredProducts.length > ITEMS_PER_PAGE && (
               <span className="ml-2">
@@ -230,10 +246,10 @@ export default function ProductsPage() {
       <div className="max-w-6xl mx-auto">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-magic-gold-light text-lg font-magic">
+            <p className="text-[var(--foreground)] text-lg font-semibold">
               目前沒有商品
             </p>
-            <p className="text-magic-gold-light/70 text-sm mt-2">
+            <p className="text-[var(--muted)] text-sm mt-2">
               請在後台同步商品
             </p>
           </div>
@@ -251,7 +267,7 @@ export default function ProductsPage() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-2 bg-magic-purple/20 border border-magic-gold/30 rounded-lg text-magic-gold-light hover:bg-magic-purple/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="px-3 py-2 bg-white border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:border-[var(--primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   上一頁
@@ -265,10 +281,10 @@ export default function ProductsPage() {
                       disabled={page === '...' || page === currentPage}
                       className={`px-3 py-2 min-w-[40px] border rounded-lg transition-colors ${
                         page === currentPage
-                          ? 'bg-magic-gold text-magic-dark border-magic-gold font-magic'
+                          ? 'bg-[var(--primary)] text-white border-[var(--primary)] font-semibold'
                           : page === '...'
-                          ? 'bg-transparent border-transparent text-magic-gold-light cursor-default'
-                          : 'bg-magic-purple/20 border-magic-gold/30 text-magic-gold-light hover:bg-magic-purple/40'
+                          ? 'bg-transparent border-transparent text-[var(--muted)] cursor-default'
+                          : 'bg-white border-[var(--border)] text-[var(--foreground)] hover:border-[var(--primary)]'
                       } disabled:cursor-not-allowed`}
                     >
                       {page}
@@ -279,7 +295,7 @@ export default function ProductsPage() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-2 bg-magic-purple/20 border border-magic-gold/30 rounded-lg text-magic-gold-light hover:bg-magic-purple/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="px-3 py-2 bg-white border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:border-[var(--primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   下一頁
                   <ChevronRight className="w-4 h-4" />

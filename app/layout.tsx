@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import Analytics from '@/components/Analytics';
 
 export const metadata: Metadata = {
   title: '藝棧 Showartz - 魔法商店',
@@ -16,7 +17,8 @@ export default function RootLayout({
   return (
     <html lang="zh-TW">
       <body>
-        <div className="min-h-screen bg-gradient-to-b from-magic-dark via-magic-blue/20 to-magic-dark flex flex-col">
+        <Analytics />
+        <div className="min-h-screen bg-gradient-to-b from-white via-[#f3f6f8] to-[#eef2f7] text-[var(--foreground)] flex flex-col">
           <Navigation />
           <main className="flex-1">
             {children}

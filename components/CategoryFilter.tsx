@@ -28,10 +28,10 @@ export default function CategoryFilter({
           <button
             key={category.value}
             onClick={() => onCategoryChange(category.value)}
-            className={`px-4 py-2 rounded-full text-sm md:text-base font-magic transition-all duration-300 ${
+            className={`px-4 py-2 rounded-full text-sm md:text-base font-semibold transition-all duration-300 border ${
               isSelected
-                ? 'bg-magic-gold text-magic-dark magic-glow'
-                : 'bg-magic-purple/30 text-magic-gold-light hover:bg-magic-purple/50 hover:text-magic-gold'
+                ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md'
+                : 'bg-white text-[var(--foreground)] border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)] shadow-sm'
             }`}
           >
             {isSelected && (

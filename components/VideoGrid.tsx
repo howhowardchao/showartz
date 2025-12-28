@@ -43,7 +43,7 @@ export default function VideoGrid() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-magic-gold font-magic text-xl magic-sparkle">
+        <div className="text-[var(--primary)] font-semibold text-xl">
           載入中...
         </div>
       </div>
@@ -60,7 +60,7 @@ export default function VideoGrid() {
       <div className="max-w-6xl mx-auto">
         {filteredVideos.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-magic-gold-light text-lg font-magic">
+            <p className="text-[var(--foreground)] text-lg font-semibold">
               目前沒有影片
             </p>
           </div>

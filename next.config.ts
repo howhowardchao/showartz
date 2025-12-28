@@ -3,8 +3,6 @@ import type { NextConfig } from 'next';
 // 使用預設 output（非 standalone），避免特殊輸出造成路由漏打包
 const nextConfig: NextConfig = {
   images: {
-    loader: 'custom',
-    loaderFile: './lib/image-loader.ts',
     remotePatterns: [
       {
         protocol: 'https',
@@ -32,15 +30,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**.pinkoi.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cf.shopee.tw',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.shopee.tw',
+        hostname: 'cdn04.pinkoi.com',
       },
     ],
   },

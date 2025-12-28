@@ -67,8 +67,7 @@ export default function VideoPlayer({ video, onClose }: VideoPlayerProps) {
                   style={{ minHeight: '400px' }}
                   frameBorder="0"
                   scrolling="no"
-                  allowTransparency={true}
-                  allow="encrypted-media; autoplay; fullscreen"
+                  allow="encrypted-media; autoplay"
                   allowFullScreen
                   className="w-full h-full absolute inset-0"
                   title={video.title || 'Instagram Video'}

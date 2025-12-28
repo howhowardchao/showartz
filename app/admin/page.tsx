@@ -7,10 +7,15 @@ import LoginForm from '@/components/admin/LoginForm';
 import VideoManager from '@/components/admin/VideoManager';
 import ImageManager from '@/components/admin/ImageManager';
 import ProductManager from '@/components/admin/ProductManager';
-import { LogOut } from 'lucide-react';
+import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
+import UserManager from '@/components/admin/UserManager';
+import { LogOut, BarChart3, Video, Image as ImageIcon, Package, Users } from 'lucide-react';
+
+type TabType = 'analytics' | 'videos' | 'images' | 'products' | 'users';
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('analytics');
   const router = useRouter();
 
   const checkAuth = useCallback(async () => {
@@ -50,7 +55,7 @@ export default function AdminPage() {
   if (authenticated === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-magic-gold font-magic text-xl magic-sparkle">
+        <div className="text-[var(--primary)] font-semibold text-xl">
           檢查中...
         </div>
       </div>
@@ -61,23 +66,61 @@ export default function AdminPage() {
     return <LoginForm />;
   }
 
+  const tabs = [
+    { id: 'analytics' as TabType, label: '訪客統計', icon: BarChart3 },
+    { id: 'videos' as TabType, label: '媒體管理', icon: Video },
+    { id: 'images' as TabType, label: '圖片管理', icon: ImageIcon },
+    { id: 'products' as TabType, label: '商品管理', icon: Package },
+    { id: 'users' as TabType, label: '會員管理', icon: Users },
+  ];
+
   return (
     <div className="min-h-screen max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-magic text-magic-gold">後台管理</h1>
+        <h1 className="text-4xl font-semibold text-[var(--foreground)]">後台管理</h1>
         <button
           onClick={handleLogout}
-          className="bg-magic-purple/50 text-magic-gold-light px-4 py-2 rounded-lg font-magic hover:bg-magic-purple/70 transition-colors flex items-center gap-2"
+          className="bg-white border border-[var(--border)] text-[var(--foreground)] px-4 py-2 rounded-lg font-semibold hover:bg-[var(--border)] transition-colors flex items-center gap-2 shadow-sm"
         >
           <LogOut className="w-5 h-5" />
           登出
         </button>
       </div>
 
-      <div className="space-y-12">
-        <VideoManager />
-        <ImageManager />
-        <ProductManager />
+      {/* 分頁籤 */}
+      <div className="border-b border-[var(--border)] mb-6">
+        <div className="flex space-x-1 overflow-x-auto">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors whitespace-nowrap
+                  ${
+                    isActive
+                      ? 'text-[var(--primary)] border-b-2 border-[var(--primary)]'
+                      : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  }
+                `}
+              >
+                <Icon className="w-5 h-5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 分頁內容 */}
+      <div className="mt-6">
+        {activeTab === 'analytics' && <AnalyticsDashboard />}
+        {activeTab === 'videos' && <VideoManager />}
+        {activeTab === 'images' && <ImageManager />}
+        {activeTab === 'products' && <ProductManager />}
+        {activeTab === 'users' && <UserManager />}
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ export default function Logo() {
     <div className="flex items-center">
       <div className="relative h-[34px] md:h-[42px] w-auto">
         <Image
-          src="/showartzlogo.png"
+          src="/showartzlogo_01.png"
           alt="Showartz Logo"
           width={2001}
           height={500}

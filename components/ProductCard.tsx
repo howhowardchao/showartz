@@ -44,14 +44,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div
-      className="relative group cursor-pointer transform transition-all duration-300 hover:scale-105"
+      className="relative group cursor-pointer transform transition-all duration-300 hover:-translate-y-1"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
     >
-      <div className="bg-gradient-to-br from-magic-purple/30 to-magic-blue/30 rounded-lg overflow-hidden border border-magic-purple/30 magic-glow hover:border-magic-gold/50 relative">
+      <div className="rounded-xl overflow-hidden border border-[var(--border)] bg-white shadow-sm hover:shadow-lg relative transition-shadow duration-300">
         {/* 商品圖片 */}
-        <div className="aspect-square bg-magic-dark/50 relative">
+        <div className="aspect-square bg-[var(--border)]/40 relative">
           {getValidImageUrl() && !imageError ? (
             <Image
               src={getValidImageUrl()!}
@@ -62,9 +62,9 @@ export default function ProductCard({ product }: ProductCardProps) {
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-magic-purple/20 to-magic-blue/20">
-              <div className="text-magic-gold-light opacity-50 text-center p-4">
-                <p className="text-sm font-magic">無圖片</p>
+            <div className="w-full h-full flex items-center justify-center bg-[var(--border)]/50">
+              <div className="text-[var(--muted)] opacity-80 text-center p-4">
+                <p className="text-sm font-semibold">無圖片</p>
               </div>
             </div>
           )}
@@ -72,8 +72,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* 平台標記 */}
           {(product.pinkoi_url || product.shopee_url) && (
             <div className="absolute top-3 right-3 z-20 pointer-events-none">
-              <div className="bg-magic-dark/80 backdrop-blur-sm rounded-lg px-3 py-1">
-                <span className="text-xs text-magic-gold-light font-magic">
+              <div className="bg-white/90 border border-[var(--border)] backdrop-blur-sm rounded-full px-3 py-1 shadow-sm">
+                <span className="text-xs text-[var(--foreground)] font-semibold">
                   {product.pinkoi_url ? 'Pinkoi' : '蝦皮'}
                 </span>
               </div>
@@ -82,14 +82,12 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Hover overlay */}
           {isHovered && (
-            <div className="absolute inset-0 bg-gradient-to-t from-magic-dark/95 via-magic-dark/70 to-magic-dark/50 z-30 transition-opacity duration-300 pointer-events-none">
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                <div className="mb-4">
-                  <div className="bg-magic-gold rounded-full p-5 magic-glow transform scale-125 transition-transform duration-300">
-                    <ExternalLink className="w-10 h-10 text-magic-dark" />
-                  </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent z-30 transition-opacity duration-300 pointer-events-none">
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-2">
+                <div className="bg-[var(--primary)] text-white rounded-full p-3 shadow-md">
+                  <ExternalLink className="w-6 h-6" />
                 </div>
-                <p className="text-xs text-magic-gold-light text-center opacity-90 font-magic">
+                <p className="text-xs text-white text-center opacity-90 font-semibold">
                   前往購買
                 </p>
               </div>
@@ -98,18 +96,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* 商品資訊 */}
-        <div className="p-4">
-          <h3 className="text-sm text-magic-gold-light font-magic line-clamp-2 mb-2 min-h-[2.5rem]">
+        <div className="p-4 space-y-2">
+          <h3 className="text-sm text-[var(--foreground)] font-semibold line-clamp-2 min-h-[2.5rem]">
             {product.name}
           </h3>
           
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
-              <span className="text-lg text-magic-gold font-magic">
+              <span className="text-lg text-[var(--foreground)] font-semibold">
                 {formatPrice(product.price)}
               </span>
               {product.original_price && product.original_price > product.price && (
-                <span className="text-xs text-magic-gold-light/60 line-through">
+                <span className="text-xs text-[var(--muted)] line-through">
                   {formatPrice(product.original_price)}
                 </span>
               )}
@@ -117,8 +115,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             
             {product.rating && (
               <div className="flex items-center gap-1">
-                <span className="text-xs text-magic-gold-light">⭐</span>
-                <span className="text-xs text-magic-gold-light">
+                <span className="text-xs text-[var(--muted)]">⭐</span>
+                <span className="text-xs text-[var(--muted)]">
                   {typeof product.rating === 'number' 
                     ? product.rating.toFixed(1) 
                     : parseFloat(String(product.rating || 0)).toFixed(1)}
@@ -128,7 +126,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
 
           {product.sales_count > 0 && (
-            <p className="text-xs text-magic-gold-light/70 mt-2">
+            <p className="text-xs text-[var(--muted)] mt-1">
               已售 {product.sales_count.toLocaleString()}
             </p>
           )}

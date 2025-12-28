@@ -44,7 +44,7 @@ const poolConfig = {
 // Lazy initialization: 只有在實際使用時才創建 Pool，避免啟動時阻塞
 let poolInstance: Pool | null = null;
 
-function getPool(): Pool {
+export function getPool(): Pool {
   if (!poolInstance) {
     poolInstance = new Pool(poolConfig);
     // 添加錯誤處理，避免未處理的錯誤導致應用崩潰
@@ -130,6 +130,105 @@ export async function initDatabase() {
       );
     `);
 
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        nickname TEXT,
+        avatar_url TEXT,
+        email_verified BOOLEAN DEFAULT FALSE,
+        status VARCHAR(20) DEFAULT 'active',
+        membership_level VARCHAR(20) DEFAULT 'regular',
+        total_points INTEGER DEFAULT 0,
+        total_spent DECIMAL(10, 2) DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        last_login_at TIMESTAMP
+      );
+    `);
+
+    // Create addresses table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS addresses (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        address_line1 TEXT NOT NULL,
+        address_line2 TEXT,
+        city TEXT NOT NULL,
+        postal_code TEXT NOT NULL,
+        country TEXT DEFAULT 'TW',
+        is_default BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create analytics tables
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS visitors (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        visitor_id TEXT UNIQUE NOT NULL,
+        first_visit_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        last_visit_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        visit_count INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        visitor_id TEXT NOT NULL,
+        session_id TEXT UNIQUE NOT NULL,
+        started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ended_at TIMESTAMP,
+        duration_seconds INTEGER,
+        page_count INTEGER NOT NULL DEFAULT 0,
+        referrer TEXT,
+        user_agent TEXT,
+        ip_address TEXT,
+        device_type VARCHAR(20),
+        screen_width INTEGER,
+        screen_height INTEGER,
+        language VARCHAR(10),
+        country VARCHAR(2),
+        city TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS page_views (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id TEXT NOT NULL,
+        visitor_id TEXT NOT NULL,
+        page_path TEXT NOT NULL,
+        page_title TEXT,
+        entered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        exited_at TIMESTAMP,
+        duration_seconds INTEGER,
+        scroll_depth INTEGER,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id TEXT,
+        visitor_id TEXT,
+        event_type VARCHAR(50) NOT NULL,
+        event_name TEXT NOT NULL,
+        event_data JSONB,
+        page_path TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Create index for faster queries
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_videos_category ON videos(category);
@@ -140,6 +239,16 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
       CREATE INDEX IF NOT EXISTS idx_products_tags ON products USING GIN(tags);
+      CREATE INDEX IF NOT EXISTS idx_sessions_visitor_id ON sessions(visitor_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON sessions(started_at);
+      CREATE INDEX IF NOT EXISTS idx_page_views_session_id ON page_views(session_id);
+      CREATE INDEX IF NOT EXISTS idx_page_views_visitor_id ON page_views(visitor_id);
+      CREATE INDEX IF NOT EXISTS idx_page_views_entered_at ON page_views(entered_at);
+      CREATE INDEX IF NOT EXISTS idx_events_session_id ON events(session_id);
+      CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
+      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+      CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+      CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
     `);
   } finally {
     client.release();
@@ -698,6 +807,278 @@ export async function deactivateProductsWithoutImages(): Promise<number> {
     `
   );
   return result.rowCount ?? 0;
+}
+
+// User operations
+export interface User {
+  id: string;
+  email: string;
+  password_hash: string;
+  name: string;
+  nickname?: string;
+  avatar_url?: string;
+  email_verified: boolean;
+  status: string;
+  membership_level: string;
+  total_points: number;
+  total_spent: number;
+  created_at: Date;
+  updated_at: Date;
+  last_login_at?: Date;
+}
+
+export interface Address {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  postal_code: string;
+  country: string;
+  is_default: boolean;
+  created_at: Date;
+}
+
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const result = await getPool().query('SELECT * FROM users WHERE email = $1', [email]);
+  return result.rows[0] || null;
+}
+
+export async function getUserById(id: string): Promise<User | null> {
+  const result = await getPool().query('SELECT * FROM users WHERE id = $1', [id]);
+  if (!result.rows[0]) return null;
+  // 不返回密碼雜湊
+  const { password_hash, ...user } = result.rows[0];
+  return user as User;
+}
+
+export async function createUser(
+  email: string,
+  passwordHash: string,
+  name: string,
+  nickname?: string
+): Promise<User> {
+  const result = await getPool().query(
+    `INSERT INTO users (email, password_hash, name, nickname)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, email, name, nickname, avatar_url, email_verified, status, 
+               membership_level, total_points, total_spent, created_at, updated_at, last_login_at`,
+    [email, passwordHash, name, nickname || null]
+  );
+  return result.rows[0];
+}
+
+export async function updateUserLastLogin(userId: string): Promise<void> {
+  await getPool().query(
+    'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
+    [userId]
+  );
+}
+
+export async function updateUserProfile(
+  userId: string,
+  updates: Partial<Pick<User, 'name' | 'nickname' | 'avatar_url'>>
+): Promise<User> {
+  const fields: string[] = [];
+  const values: (string | null)[] = [];
+  let paramIndex = 1;
+
+  if (updates.name !== undefined) {
+    fields.push(`name = $${paramIndex++}`);
+    values.push(updates.name);
+  }
+  if (updates.nickname !== undefined) {
+    fields.push(`nickname = $${paramIndex++}`);
+    values.push(updates.nickname || null);
+  }
+  if (updates.avatar_url !== undefined) {
+    fields.push(`avatar_url = $${paramIndex++}`);
+    values.push(updates.avatar_url || null);
+  }
+
+  if (fields.length === 0) {
+    const user = await getUserById(userId);
+    if (!user) throw new Error('User not found');
+    return user;
+  }
+
+  fields.push(`updated_at = CURRENT_TIMESTAMP`);
+  values.push(userId);
+
+  const result = await getPool().query(
+    `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} 
+     RETURNING id, email, name, nickname, avatar_url, email_verified, status, 
+               membership_level, total_points, total_spent, created_at, updated_at, last_login_at`,
+    values
+  );
+  return result.rows[0];
+}
+
+export async function getUserAddresses(userId: string): Promise<Address[]> {
+  const result = await getPool().query(
+    'SELECT * FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC',
+    [userId]
+  );
+  return result.rows;
+}
+
+export async function createAddress(
+  userId: string,
+  address: Omit<Address, 'id' | 'user_id' | 'created_at'>
+): Promise<Address> {
+  // 如果設為預設地址，先取消其他預設地址
+  if (address.is_default) {
+    await getPool().query(
+      'UPDATE addresses SET is_default = FALSE WHERE user_id = $1',
+      [userId]
+    );
+  }
+
+  const result = await getPool().query(
+    `INSERT INTO addresses (user_id, name, phone, address_line1, address_line2, city, postal_code, country, is_default)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING *`,
+    [
+      userId,
+      address.name,
+      address.phone,
+      address.address_line1,
+      address.address_line2 || null,
+      address.city,
+      address.postal_code,
+      address.country || 'TW',
+      address.is_default || false,
+    ]
+  );
+  return result.rows[0];
+}
+
+export async function updateAddress(
+  addressId: string,
+  userId: string,
+  updates: Partial<Omit<Address, 'id' | 'user_id' | 'created_at'>>
+): Promise<Address> {
+  // 如果設為預設地址，先取消其他預設地址
+  if (updates.is_default) {
+    await getPool().query(
+      'UPDATE addresses SET is_default = FALSE WHERE user_id = $1 AND id != $2',
+      [userId, addressId]
+    );
+  }
+
+  const fields: string[] = [];
+  const values: (string | boolean | null)[] = [];
+  let paramIndex = 1;
+
+  if (updates.name !== undefined) {
+    fields.push(`name = $${paramIndex++}`);
+    values.push(updates.name);
+  }
+  if (updates.phone !== undefined) {
+    fields.push(`phone = $${paramIndex++}`);
+    values.push(updates.phone);
+  }
+  if (updates.address_line1 !== undefined) {
+    fields.push(`address_line1 = $${paramIndex++}`);
+    values.push(updates.address_line1);
+  }
+  if (updates.address_line2 !== undefined) {
+    fields.push(`address_line2 = $${paramIndex++}`);
+    values.push(updates.address_line2 || null);
+  }
+  if (updates.city !== undefined) {
+    fields.push(`city = $${paramIndex++}`);
+    values.push(updates.city);
+  }
+  if (updates.postal_code !== undefined) {
+    fields.push(`postal_code = $${paramIndex++}`);
+    values.push(updates.postal_code);
+  }
+  if (updates.country !== undefined) {
+    fields.push(`country = $${paramIndex++}`);
+    values.push(updates.country);
+  }
+  if (updates.is_default !== undefined) {
+    fields.push(`is_default = $${paramIndex++}`);
+    values.push(updates.is_default);
+  }
+
+  values.push(addressId);
+
+  const result = await getPool().query(
+    `UPDATE addresses SET ${fields.join(', ')} WHERE id = $${paramIndex} AND user_id = (SELECT user_id FROM addresses WHERE id = $${paramIndex} LIMIT 1)
+     RETURNING *`,
+    values
+  );
+  return result.rows[0];
+}
+
+export async function deleteAddress(addressId: string, userId: string): Promise<boolean> {
+  const result = await getPool().query(
+    'DELETE FROM addresses WHERE id = $1 AND user_id = $2',
+    [addressId, userId]
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+// Admin user management functions
+export async function getAllUsers(): Promise<User[]> {
+  const result = await getPool().query(
+    `SELECT id, email, name, nickname, avatar_url, email_verified, status, 
+            membership_level, total_points, total_spent, created_at, updated_at, last_login_at
+     FROM users 
+     ORDER BY created_at DESC`
+  );
+  return result.rows;
+}
+
+export async function updateUserStatus(
+  userId: string,
+  updates: Partial<Pick<User, 'status' | 'membership_level' | 'email_verified'>>
+): Promise<User> {
+  const fields: string[] = [];
+  const values: (string | boolean)[] = [];
+  let paramIndex = 1;
+
+  if (updates.status !== undefined) {
+    fields.push(`status = $${paramIndex++}`);
+    values.push(updates.status);
+  }
+  if (updates.membership_level !== undefined) {
+    fields.push(`membership_level = $${paramIndex++}`);
+    values.push(updates.membership_level);
+  }
+  if (updates.email_verified !== undefined) {
+    fields.push(`email_verified = $${paramIndex++}`);
+    values.push(updates.email_verified);
+  }
+
+  if (fields.length === 0) {
+    const user = await getUserById(userId);
+    if (!user) throw new Error('User not found');
+    return user;
+  }
+
+  fields.push(`updated_at = CURRENT_TIMESTAMP`);
+  values.push(userId);
+
+  const result = await getPool().query(
+    `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramIndex} 
+     RETURNING id, email, name, nickname, avatar_url, email_verified, status, 
+               membership_level, total_points, total_spent, created_at, updated_at, last_login_at`,
+    values
+  );
+  return result.rows[0];
+}
+
+export async function deleteUser(userId: string): Promise<boolean> {
+  // 先刪除相關的地址記錄
+  await getPool().query('DELETE FROM addresses WHERE user_id = $1', [userId]);
+  // 再刪除用戶
+  const result = await getPool().query('DELETE FROM users WHERE id = $1', [userId]);
+  return (result.rowCount ?? 0) > 0;
 }
 
 // 為 default 匯出提供現成的 Pool 實例，符合原本 pool.query 的使用方式

@@ -4,11 +4,17 @@
 
 ## 📌 版本資訊
 
-**當前版本**: v1.0.0  
-**最後更新**: 2025-12-13  
+**當前版本**: v1.1.0  
+**最後更新**: 2024-12-20  
 **部署狀態**: ✅ 已部署至生產環境 (https://showartz.com)
 
-### 最新更新 (v1.0.0 - 2025-12-13)
+### 最新更新 (v1.1.0 - 2024-12-20)
+- 🎨 **前端設計調整**：簡潔俐落的現代化 UI 風格，優化間距與佈局
+- 📊 **訪客統計系統**：完整的網站分析功能，包含訪客數、會話數、頁面瀏覽、裝置類型等統計
+- 👥 **會員管理系統**：後台會員管理功能，支援狀態管理、會員等級設定、Email 驗證管理
+- 🔧 **系統優化計劃**：完整的優化報告，包含性能優化、代碼質量改進建議
+
+### 歷史更新 (v1.0.0 - 2025-12-13)
 - ✨ **故事頁面優化**：在預覽圖下方顯示前 120 字描述，提升用戶體驗
 - 🎨 **Logo 更新**：調整為橫式設計（2001x500px），移除文字標籤，響應式高度（手機 34px / 桌面 42px）
 - 📸 **上傳規格標示**：在後台管理介面標示建議的圖片尺寸與比例
@@ -64,10 +70,18 @@
 - 流暢的動畫過渡效果
 
 ### 🔐 後台管理
-- 獨立後台系統
-- 影片管理（新增、編輯、刪除、分類、縮圖上傳）
-- 照片管理（故事圖片上傳）
-- 商品管理（同步、編輯、刪除）
+- 獨立後台系統，分頁式管理介面
+- **媒體管理**：影片管理（新增、編輯、刪除、分類、縮圖上傳）
+- **圖片管理**：故事圖片上傳與管理
+- **商品管理**：商品同步、編輯、刪除功能
+- **會員管理**：會員列表、狀態管理、會員等級設定、Email 驗證管理
+- **訪客統計**：完整的網站分析儀表板
+  - 總訪客數、會話數、頁面瀏覽數
+  - 平均會話時長、頁面停留時間
+  - 即時在線訪客數
+  - 熱門頁面排行
+  - 裝置類型分布
+  - 新訪客 vs 回訪者分析
 - **文件上傳規格**：
   - 縮圖：建議尺寸 640x1136 像素，比例約為 9:16（直式），最大 5MB
   - 故事圖片：建議比例 1:1（正方形）或 4:5（直式），最大 8MB
@@ -140,7 +154,7 @@
 
 ## 文檔索引
 - 根目錄：`README.md`（總覽與入口）、`QUICKSTART.md`（快速開始）、`SETUP_ENV.md`（環境設定）。
-- docs/：分析與最佳化報告（如 `ANALYSIS_REPORT.md`、`OPTIMIZATION_REPORT.md`）。
+- docs/：分析與最佳化報告（如 `ANALYSIS_REPORT.md`、`OPTIMIZATION_REPORT.md`、`SYSTEM_OPTIMIZATION_REPORT.md`）。
 - docs/ops/：部署與故障排除／Nginx／502 修復（如 `DEPLOY_FIX_502.md`、`FIX_502_ANALYSIS.md`、`QUICK_FIX.md`、`DEPLOY_LATEST.md`、`DEPLOY_STEPS.md`、`DEPLOY_VULTR.md`、`DEPLOYMENT_STATUS.md`、`VULTR_QUICK_START.md`、`NGINX_CONFIG.md`、`NGINX_UPLOADS_FIX.md`）。
 - readme/：Assistant/AI 專題文檔與提示詞（如 `OpenAI Assistant 配置指南.md`、`創建新的 Assistant.md`、`showartz Tarot 顧問＋商品推薦助理提示詞`、`showartz_product_tools_schema.json`）。
 - 規則：新增文檔請依主題放到對應目錄，並在本索引補上一行用途描述。
@@ -290,6 +304,31 @@
 6. ✅ 分類按鈕間距優化
 7. ✅ 服務項目與 Footer 間距調整
 
+### Phase 8: 前端設計調整與新功能 (v1.1.0)
+1. ✅ **前端設計優化**：簡潔俐落的現代化 UI 風格
+   - 統一間距與佈局設計
+   - 優化色彩搭配與視覺層次
+   - 改進響應式設計體驗
+2. ✅ **訪客統計系統**：完整的網站分析功能
+   - 資料庫設計：sessions、page_views、visitors 表
+   - 前端追蹤：Analytics 組件自動記錄訪客行為
+   - 後台儀表板：AnalyticsDashboard 組件顯示統計數據
+   - API 端點：`/api/analytics/stats` 提供統計數據
+   - 支援時間範圍篩選：今天、本週、本月
+3. ✅ **會員管理系統**：後台會員管理功能
+   - 會員列表顯示：姓名、Email、狀態、會員等級、積分、消費金額
+   - 狀態管理：啟用、停用、暫停
+   - 會員等級：一般會員、高級會員、VIP 會員
+   - Email 驗證管理：手動設定驗證狀態
+   - 篩選功能：依狀態和會員等級篩選
+   - 統計資訊：總會員數、啟用會員數、VIP 會員數、總消費金額
+   - API 端點：`/api/admin/users` 提供 CRUD 操作
+4. ✅ **系統優化計劃**：完整的優化分析報告
+   - 高優先級優化：數據庫查詢優化、日誌管理、前端性能優化
+   - 中優先級優化：API 緩存、錯誤處理統一、輸入驗證
+   - 低優先級優化：代碼重複消除、類型安全改進、批量操作優化
+   - 詳細報告：`docs/SYSTEM_OPTIMIZATION_REPORT.md`
+
 ## 環境設定
 
 ### 必要環境變數
@@ -430,6 +469,90 @@ npm run dev
 - 功能：查詢同步狀態
 - 回應：同步狀態資訊
 
+### 訪客統計 API
+
+**GET /api/analytics/stats**
+- 功能：取得網站統計數據
+- 權限：需要管理員登入
+- 查詢參數：
+  - `period`: 時間範圍 (today, week, month)
+- 回應：
+  ```json
+  {
+    "totalVisitors": 100,
+    "totalSessions": 150,
+    "totalPageViews": 300,
+    "avgSessionDuration": 180,
+    "avgPageDuration": 60,
+    "activeVisitors": 5,
+    "popularPages": [...],
+    "deviceTypes": [...],
+    "visitorTypes": [...]
+  }
+  ```
+
+**POST /api/analytics/pageview**
+- 功能：記錄頁面瀏覽（前端自動調用）
+- 請求體：
+  ```json
+  {
+    "pagePath": "/products",
+    "referrer": "https://showartz.com"
+  }
+  ```
+
+**POST /api/analytics/pageview/exit**
+- 功能：記錄頁面離開（前端自動調用）
+- 請求體：
+  ```json
+  {
+    "pagePath": "/products",
+    "duration": 60,
+    "scrollDepth": 75
+  }
+  ```
+
+**POST /api/analytics/session/end**
+- 功能：結束會話（前端自動調用）
+- 請求體：
+  ```json
+  {
+    "sessionId": "uuid",
+    "duration": 180
+  }
+  ```
+
+### 會員管理 API
+
+**GET /api/admin/users**
+- 功能：取得所有會員列表
+- 權限：需要管理員登入
+- 回應：會員陣列
+
+**PUT /api/admin/users**
+- 功能：更新會員狀態、會員等級、Email 驗證狀態
+- 權限：需要管理員登入
+- 請求體：
+  ```json
+  {
+    "userId": "uuid",
+    "status": "active",
+    "membership_level": "vip",
+    "email_verified": true
+  }
+  ```
+
+**DELETE /api/admin/users?userId=uuid**
+- 功能：刪除會員（同時刪除相關地址資料）
+- 權限：需要管理員登入
+- 回應：
+  ```json
+  {
+    "success": true,
+    "message": "User deleted successfully"
+  }
+  ```
+
 ## 資料庫結構
 
 ### videos 表
@@ -469,6 +592,61 @@ npm run dev
 - `username`: 使用者名稱
 - `password_hash`: 密碼雜湊
 - `created_at`: 建立時間
+
+### users 表（會員表）
+- `id`: UUID (主鍵)
+- `email`: Email 地址（唯一）
+- `password_hash`: 密碼雜湊
+- `name`: 姓名
+- `nickname`: 暱稱
+- `avatar_url`: 頭像 URL
+- `email_verified`: Email 是否驗證
+- `status`: 狀態 (active, inactive, suspended)
+- `membership_level`: 會員等級 (regular, premium, vip)
+- `total_points`: 總積分
+- `total_spent`: 總消費金額
+- `created_at`: 建立時間
+- `updated_at`: 更新時間
+- `last_login_at`: 最後登入時間
+
+### addresses 表（地址表）
+- `id`: UUID (主鍵)
+- `user_id`: 用戶 ID（外鍵）
+- `name`: 收件人姓名
+- `phone`: 電話號碼
+- `address_line1`: 地址第一行
+- `address_line2`: 地址第二行（可選）
+- `city`: 城市
+- `postal_code`: 郵遞區號
+- `country`: 國家
+- `is_default`: 是否為預設地址
+- `created_at`: 建立時間
+
+### sessions 表（會話表）
+- `id`: UUID (主鍵)
+- `visitor_id`: 訪客 ID
+- `started_at`: 會話開始時間
+- `ended_at`: 會話結束時間
+- `duration_seconds`: 會話持續時間（秒）
+- `device_type`: 裝置類型 (desktop, mobile, tablet)
+- `browser`: 瀏覽器名稱
+- `os`: 作業系統
+
+### page_views 表（頁面瀏覽表）
+- `id`: UUID (主鍵)
+- `session_id`: 會話 ID（外鍵）
+- `visitor_id`: 訪客 ID
+- `page_path`: 頁面路徑
+- `entered_at`: 進入時間
+- `exited_at`: 離開時間
+- `duration_seconds`: 頁面停留時間（秒）
+- `scroll_depth`: 滾動深度（0-100）
+
+### visitors 表（訪客表）
+- `visitor_id`: 訪客 ID（主鍵）
+- `first_seen_at`: 首次訪問時間
+- `last_seen_at`: 最後訪問時間
+- `visit_count`: 訪問次數
 
 ## 部署說明
 
@@ -648,18 +826,36 @@ bash scripts/fix-502.sh       # 自動修復
 showartz251120/
 ├── app/                      # Next.js App Router
 │   ├── api/                  # API Routes
+│   │   ├── admin/           # 管理員 API
+│   │   │   ├── users/       # 會員管理 API
+│   │   │   └── reset-password/  # 密碼重置
+│   │   ├── analytics/       # 訪客統計 API
+│   │   │   ├── pageview/    # 頁面瀏覽記錄
+│   │   │   ├── session/     # 會話管理
+│   │   │   └── stats/       # 統計數據
 │   │   ├── auth/            # 認證相關
+│   │   │   ├── user/        # 用戶認證
+│   │   │   └── session/     # Session 管理
 │   │   ├── products/        # 商品 API
 │   │   ├── pinkoi/          # Pinkoi 同步
 │   │   ├── search/          # 聊天 API
 │   │   └── videos/          # 影片 API
 │   ├── admin/               # 後台頁面
+│   ├── account/             # 會員中心
+│   ├── login/               # 登入頁面
+│   ├── register/            # 註冊頁面
 │   ├── space/               # 空間頁面
 │   ├── products/            # 商品頁面
 │   ├── about/               # 關於頁面
 │   └── page.tsx             # 首頁
 ├── components/              # React 組件
 │   ├── admin/               # 後台組件
+│   │   ├── AnalyticsDashboard.tsx  # 訪客統計儀表板
+│   │   ├── UserManager.tsx  # 會員管理
+│   │   ├── ProductManager.tsx  # 商品管理
+│   │   ├── VideoManager.tsx   # 媒體管理
+│   │   └── ImageManager.tsx   # 圖片管理
+│   ├── Analytics.tsx        # 訪客追蹤組件
 │   ├── SearchAgent.tsx      # AI 聊天組件（藝棧精靈）
 │   ├── VideoGrid.tsx        # 影片網格
 │   ├── ProductGrid.tsx      # 商品網格
@@ -674,6 +870,10 @@ showartz251120/
 │   └── auth.ts              # 認證工具
 ├── scripts/                  # 腳本
 │   └── init-db.mjs          # 資料庫初始化
+├── docs/                     # 文檔
+│   ├── SYSTEM_OPTIMIZATION_REPORT.md  # 系統優化報告
+│   ├── ANALYSIS_REPORT.md   # 系統分析報告
+│   └── OPTIMIZATION_REPORT.md  # 優化報告
 ├── readme/                   # 文檔
 │   ├── OpenAI Assistant 配置指南.md
 │   ├── showartz Tarot 顧問＋商品推薦助理提示詞

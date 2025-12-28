@@ -141,9 +141,9 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
       }`}
     >
       <div 
-        className={`bg-magic-purple/20 rounded-lg border border-magic-gold/30 backdrop-blur-sm transition-all duration-500 ease-in-out ${
+        className={`rounded-2xl border border-[var(--border)] bg-white shadow-md transition-all duration-500 ease-in-out ${
           hasMessages 
-            ? 'p-6 md:p-8 shadow-2xl border-magic-gold/50' 
+            ? 'p-6 md:p-8 shadow-lg' 
             : 'p-6 md:p-8'
         }`}
       >
@@ -151,14 +151,14 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
         {hasMessages && (
           <div className="flex items-center justify-between mb-4 animate-fade-in">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-magic-gold magic-sparkle" />
-              <h2 className="text-xl md:text-2xl font-magic text-magic-gold">
+              <Sparkles className="w-5 h-5 text-[var(--primary)]" />
+              <h2 className="text-xl md:text-2xl font-semibold text-[var(--foreground)]">
                 藝棧精靈
               </h2>
             </div>
             <button
               onClick={handleClearConversation}
-              className="text-magic-gold-light hover:text-magic-gold transition-colors p-1"
+              className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1"
               title="清空對話"
             >
               <X className="w-5 h-5" />
@@ -168,8 +168,8 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
 
         {/* 提示文字 - 只在沒有對話時顯示 */}
         {!hasMessages && (
-          <div className="text-center text-magic-gold-light opacity-70 mb-6">
-            <p className="font-magic text-lg">輕鬆聊藝棧、塔羅牌、商品推薦...</p>
+          <div className="text-center text-[var(--muted)] opacity-90 mb-6">
+            <p className="text-lg font-medium">輕鬆聊藝棧、塔羅牌、商品推薦...</p>
           </div>
         )}
 
@@ -189,26 +189,26 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
                 <div
                   className={`max-w-[80%] rounded-lg px-4 py-2 ${
                     msg.role === 'user'
-                      ? 'bg-magic-gold text-magic-dark'
-                      : 'bg-magic-blue/50 text-magic-gold-light'
+                    ? 'bg-[var(--primary)] text-white'
+                    : 'bg-[var(--border)] text-[var(--foreground)]'
                   }`}
                 >
                   {msg.role === 'assistant' ? (
-                    <div className="text-sm md:text-base text-magic-gold-light">
+                    <div className="text-sm md:text-base text-[var(--foreground)]">
                       <ReactMarkdown
                         components={{
                           p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                          strong: ({ children }) => <strong className="font-bold text-magic-gold">{children}</strong>,
+                          strong: ({ children }) => <strong className="font-bold text-[var(--foreground)]">{children}</strong>,
                           em: ({ children }) => <em className="italic">{children}</em>,
                           ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1 ml-2">{children}</ul>,
                           ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1 ml-2">{children}</ol>,
                           li: ({ children }) => <li className="ml-1">{children}</li>,
-                          h1: ({ children }) => <h1 className="text-lg font-bold mb-2 text-magic-gold">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-base font-bold mb-2 text-magic-gold">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-sm font-bold mb-1 text-magic-gold">{children}</h3>,
-                          code: ({ children }) => <code className="bg-magic-dark/50 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
-                          blockquote: ({ children }) => <blockquote className="border-l-2 border-magic-gold/50 pl-3 italic my-2">{children}</blockquote>,
-                          hr: () => <hr className="border-magic-gold/30 my-3" />,
+                          h1: ({ children }) => <h1 className="text-lg font-bold mb-2 text-[var(--foreground)]">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-base font-bold mb-2 text-[var(--foreground)]">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-sm font-bold mb-1 text-[var(--foreground)]">{children}</h3>,
+                          code: ({ children }) => <code className="bg-[var(--border)] px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
+                          blockquote: ({ children }) => <blockquote className="border-l-2 border-[var(--border)] pl-3 italic my-2 text-[var(--muted)]">{children}</blockquote>,
+                          hr: () => <hr className="border-[var(--border)] my-3" />,
                         }}
                       >
                         {msg.content}
@@ -222,8 +222,8 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-magic-blue/50 rounded-lg px-4 py-2">
-                  <Loader2 className="w-5 h-5 text-magic-gold animate-spin" />
+                <div className="bg-[var(--border)] rounded-lg px-4 py-2">
+                  <Loader2 className="w-5 h-5 text-[var(--primary)] animate-spin" />
                 </div>
               </div>
             )}
@@ -238,13 +238,13 @@ export default function SearchAgent({ onConversationChange, onProductRecommendat
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="輕鬆聊"
-            className="flex-1 bg-magic-dark border border-magic-gold/30 rounded-lg px-4 py-2 text-magic-gold-light focus:outline-none focus:border-magic-gold focus:ring-1 focus:ring-magic-gold transition-all duration-300"
+            className="flex-1 bg-white border border-[var(--border)] rounded-lg px-4 py-2 text-[var(--foreground)] focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/30 transition-all duration-300 shadow-inner"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="bg-transparent border border-magic-gold/30 text-magic-gold rounded-lg px-4 py-2 hover:bg-magic-gold/10 hover:border-magic-gold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            className="bg-[var(--primary)] border border-[var(--primary)] text-white rounded-lg px-4 py-2 hover:bg-[var(--primary-dark)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md"
             style={{ minWidth: '44px' }}
           >
             <Send className="w-5 h-5" />

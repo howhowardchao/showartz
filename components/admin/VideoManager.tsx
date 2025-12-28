@@ -173,7 +173,7 @@ export default function VideoManager() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-magic text-magic-gold">影片管理</h2>
+        <h2 className="text-2xl font-magic text-magic-gold">媒體管理</h2>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
           className="bg-magic-gold text-magic-dark px-4 py-2 rounded-lg font-magic hover:bg-magic-gold-light transition-colors flex items-center gap-2"
