@@ -26,7 +26,29 @@ export async function GET(request: NextRequest) {
       offset,
     });
 
-    return NextResponse.json(products, {
+    // 將價格欄位強制轉成數字並移除可能的貨幣符號，避免前端顯示成 `$`
+    const normalized = products.map((p) => {
+      const toNumber = (v: unknown) => {
+        if (typeof v === 'number') return v;
+        if (typeof v === 'string') {
+          const parsed = parseFloat(v.replace(/[^\d.-]/g, ''));
+          return isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+      };
+      const price = toNumber(p.price);
+      const original_price_raw = p.original_price;
+      const original_price = original_price_raw === null || original_price_raw === undefined
+        ? undefined
+        : toNumber(original_price_raw);
+      return {
+        ...p,
+        price,
+        original_price,
+      };
+    });
+
+    return NextResponse.json(normalized, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         Pragma: 'no-cache',

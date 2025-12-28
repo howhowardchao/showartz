@@ -52,6 +52,9 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
             'Referer': `https://www.pinkoi.com/store/${storeId}`,
             'Accept': 'application/json',
             'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+            // 嘗試讓 Pinkoi 直接回傳 TWD（模仿本地瀏覽），降低日幣回傳機率
+            Cookie: 'currency=TWD; locale=zh-tw',
+            'X-Pinkoi-Locale': 'zh-tw',
           },
           timeout: 10000,
         });
@@ -82,7 +85,7 @@ export async function fetchPinkoiProducts(storeId: string = 'showartz'): Promise
         }
         
         // 轉換為標準格式
-        // 匯率設定：Pinkoi API 回傳目前是 JPY，需轉換為 TWD 才符合前台顯示
+        // 匯率設定：當（少數）回傳仍是 JPY 時才換算；若已是 TWD 則直接使用
         const JPY_TO_TWD_RATE = parseFloat(process.env.PINKOI_JPY_TO_TWD_RATE || '0.22');
 
         const parsePrice = (priceSource: unknown): number => {

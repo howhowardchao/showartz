@@ -20,12 +20,26 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('zh-TW', {
-      style: 'currency',
-      currency: 'TWD',
-      minimumFractionDigits: 0,
-    }).format(price);
+  const formatPrice = (price: number | string) => {
+    const numeric =
+      typeof price === 'number'
+        ? price
+        : parseFloat(String(price).replace(/[^\d.-]/g, '')) || 0;
+    return `NT$${numeric.toLocaleString('zh-TW')}`;
+  };
+
+  // 檢查是否為占位圖片
+  const isPlaceholderImage = (url: string | undefined) => {
+    if (!url) return true;
+    return url.includes('space.gif');
+  };
+
+  // 取得有效的圖片 URL（過濾占位圖片）
+  const getValidImageUrl = () => {
+    if (isPlaceholderImage(product.image_url)) {
+      return null;
+    }
+    return product.image_url;
   };
 
   return (
@@ -38,9 +52,9 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="bg-gradient-to-br from-magic-purple/30 to-magic-blue/30 rounded-lg overflow-hidden border border-magic-purple/30 magic-glow hover:border-magic-gold/50 relative">
         {/* 商品圖片 */}
         <div className="aspect-square bg-magic-dark/50 relative">
-          {product.image_url && !imageError ? (
+          {getValidImageUrl() && !imageError ? (
             <Image
-              src={product.image_url}
+              src={getValidImageUrl()!}
               alt={product.name}
               fill
               sizes="(max-width: 768px) 50vw, 25vw"
