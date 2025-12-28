@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { getAllProducts, createProduct } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 
@@ -17,14 +18,22 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined;
 
-    const products = await getAllProducts({
-      category,
-      tags,
-      minPrice,
-      maxPrice,
-      limit,
-      offset,
-    });
+    const filters = { category, tags, minPrice, maxPrice, limit, offset };
+    const cacheKey = `products-${JSON.stringify(filters)}`;
+
+    // 使用 Next.js 緩存（60 秒）
+    const getCachedProducts = unstable_cache(
+      async () => {
+        return await getAllProducts(filters);
+      },
+      [cacheKey],
+      {
+        revalidate: 60, // 60 秒緩存
+        tags: ['products']
+      }
+    );
+
+    const products = await getCachedProducts();
 
     // 將價格欄位強制轉成數字並移除可能的貨幣符號，避免前端顯示成 `$`
     const normalized = products.map((p) => {
@@ -50,10 +59,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(normalized, {
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
-        'Surrogate-Control': 'no-store',
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
       },
     });
   } catch (error) {

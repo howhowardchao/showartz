@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { getAllVideos, createVideo } from '@/lib/db';
 import { VideoCategory } from '@/lib/types';
 import { getSession } from '@/lib/auth';
@@ -8,9 +9,26 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category') as VideoCategory | null;
+    const cacheKey = `videos-${category || 'all'}`;
 
-    const videos = await getAllVideos(category || undefined);
-    return NextResponse.json(videos);
+    // 使用 Next.js 緩存（60 秒）
+    const getCachedVideos = unstable_cache(
+      async () => {
+        return await getAllVideos(category || undefined);
+      },
+      [cacheKey],
+      {
+        revalidate: 60, // 60 秒緩存
+        tags: ['videos']
+      }
+    );
+
+    const videos = await getCachedVideos();
+    return NextResponse.json(videos, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+      },
+    });
   } catch (error) {
     console.error('Error fetching videos:', error);
     return NextResponse.json({ error: 'Failed to fetch videos' }, { status: 500 });

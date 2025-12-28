@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { User } from '@/lib/types';
 import { Trash2, Save, X, Edit2, CheckCircle, XCircle, Shield, User as UserIcon } from 'lucide-react';
 
@@ -12,11 +12,8 @@ export default function UserManager() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterMembership, setFilterMembership] = useState<string>('all');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  // 使用 useCallback 緩存函數，避免每次渲染都重新創建
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/users', {
         credentials: 'include',
@@ -30,9 +27,13 @@ export default function UserManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleUpdate = async (id: string) => {
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleUpdate = useCallback(async (id: string) => {
     try {
       const response = await fetch('/api/admin/users', {
         method: 'PUT',
@@ -57,9 +58,9 @@ export default function UserManager() {
       console.error('Error updating user:', error);
       alert('發生錯誤');
     }
-  };
+  }, [editData, fetchUsers]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('確定要刪除這個會員嗎？此操作無法復原，將同時刪除該會員的所有地址資料。')) return;
 
     try {
@@ -79,9 +80,10 @@ export default function UserManager() {
       console.error('Error deleting user:', error);
       alert('發生錯誤');
     }
-  };
+  }, [fetchUsers]);
 
-  const formatDate = (date: Date | string) => {
+  // 使用 useCallback 緩存格式化函數
+  const formatDate = useCallback((date: Date | string) => {
     if (!date) return '-';
     const d = new Date(date);
     return d.toLocaleString('zh-TW', {
@@ -91,11 +93,30 @@ export default function UserManager() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, []);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = useCallback((amount: number) => {
     return `NT$${amount.toLocaleString('zh-TW')}`;
-  };
+  }, []);
+
+  // 使用 useMemo 緩存篩選結果，只在 users 或篩選條件改變時重新計算
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      if (filterStatus !== 'all' && user.status !== filterStatus) return false;
+      if (filterMembership !== 'all' && user.membership_level !== filterMembership) return false;
+      return true;
+    });
+  }, [users, filterStatus, filterMembership]);
+
+  // 使用 useMemo 緩存統計資訊，避免每次渲染都重新計算
+  const stats = useMemo(() => {
+    return {
+      total: users.length,
+      active: users.filter((u) => u.status === 'active').length,
+      vip: users.filter((u) => u.membership_level === 'vip').length,
+      totalSpent: users.reduce((sum, u) => sum + u.total_spent, 0),
+    };
+  }, [users]);
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
@@ -124,12 +145,6 @@ export default function UserManager() {
       </span>
     );
   };
-
-  const filteredUsers = users.filter((user) => {
-    if (filterStatus !== 'all' && user.status !== filterStatus) return false;
-    if (filterMembership !== 'all' && user.membership_level !== filterMembership) return false;
-    return true;
-  });
 
   if (loading) {
     return (
@@ -192,24 +207,24 @@ export default function UserManager() {
       <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-magic-dark/50 rounded-lg border border-magic-purple/30 p-4">
           <div className="text-magic-gold-light text-sm">總會員數</div>
-          <div className="text-2xl font-magic text-magic-gold">{users.length}</div>
+          <div className="text-2xl font-magic text-magic-gold">{stats.total}</div>
         </div>
         <div className="bg-magic-dark/50 rounded-lg border border-magic-purple/30 p-4">
           <div className="text-magic-gold-light text-sm">啟用會員</div>
           <div className="text-2xl font-magic text-green-400">
-            {users.filter((u) => u.status === 'active').length}
+            {stats.active}
           </div>
         </div>
         <div className="bg-magic-dark/50 rounded-lg border border-magic-purple/30 p-4">
           <div className="text-magic-gold-light text-sm">VIP會員</div>
           <div className="text-2xl font-magic text-magic-gold">
-            {users.filter((u) => u.membership_level === 'vip').length}
+            {stats.vip}
           </div>
         </div>
         <div className="bg-magic-dark/50 rounded-lg border border-magic-purple/30 p-4">
           <div className="text-magic-gold-light text-sm">總消費金額</div>
           <div className="text-xl font-magic text-magic-gold">
-            {formatCurrency(users.reduce((sum, u) => sum + u.total_spent, 0))}
+            {formatCurrency(stats.totalSpent)}
           </div>
         </div>
       </div>
