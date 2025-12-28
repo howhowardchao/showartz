@@ -19,20 +19,26 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn01.pinkoi.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'cdn02.pinkoi.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'cdn03.pinkoi.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'cdn04.pinkoi.com',
+        pathname: '/**',
       },
     ],
+    // 允許未優化的圖片（如果優化失敗）
+    unoptimized: false,
   },
 };
 
