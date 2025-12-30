@@ -4,11 +4,21 @@
 
 ## 📌 版本資訊
 
-**當前版本**: v1.1.1  
-**最後更新**: 2024-12-20  
+**當前版本**: v1.1.2  
+**最後更新**: 2024-12-25  
 **部署狀態**: ✅ 已部署至生產環境 (https://showartz.com)
 
-### 最新更新 (v1.1.1 - 2024-12-20)
+### 最新更新 (v1.1.2 - 2024-12-25)
+- 🔧 **註冊功能修復**：
+  - 修復資料庫初始化腳本，處理空 `DATABASE_URL` 的情況，自動使用 socket 連接
+  - 改進註冊 API 錯誤處理，提供更詳細的錯誤訊息以便診斷問題
+  - 更新初始化腳本，確保 `users` 和 `addresses` 表格正確創建
+  - 修復資料庫連接邏輯，與 `lib/db.ts` 保持一致
+- 🎨 **UI 優化**：
+  - 商品頁和故事頁上方底圖下方留白，提升視覺層次
+  - 調整背景圖片容器高度，底部留出白色空間
+
+### 歷史更新 (v1.1.1 - 2024-12-20)
 - ⚡ **性能優化實施**：
   - API 響應緩存機制：商品和影片列表 API 添加 60 秒緩存，響應時間減少 70-90%
   - Analytics 查詢優化：將 9 個獨立查詢合併為 1 個 CTE 查詢，性能提升 60-80%
@@ -162,8 +172,8 @@
 
 ## 文檔索引
 - 根目錄：`README.md`（總覽與入口）、`QUICKSTART.md`（快速開始）、`SETUP_ENV.md`（環境設定）。
-- docs/：分析與最佳化報告（如 `ANALYSIS_REPORT.md`、`OPTIMIZATION_REPORT.md`、`SYSTEM_OPTIMIZATION_REPORT.md`）。
-- docs/ops/：部署與故障排除／Nginx／502 修復（如 `DEPLOY_FIX_502.md`、`FIX_502_ANALYSIS.md`、`QUICK_FIX.md`、`DEPLOY_LATEST.md`、`DEPLOY_STEPS.md`、`DEPLOY_VULTR.md`、`DEPLOYMENT_STATUS.md`、`VULTR_QUICK_START.md`、`NGINX_CONFIG.md`、`NGINX_UPLOADS_FIX.md`）。
+- docs/：分析與最佳化報告（如 `ANALYSIS_REPORT.md`、`OPTIMIZATION_REPORT.md`、`SYSTEM_OPTIMIZATION_REPORT.md`、`OPTIMIZATION_IMPLEMENTATION.md`）。
+- docs/ops/：部署與故障排除／Nginx／502 修復（如 `DEPLOY_FIX_502.md`、`FIX_502_ANALYSIS.md`、`QUICK_FIX.md`、`DEPLOY_LATEST.md`、`DEPLOY_STEPS.md`、`DEPLOY_VULTR.md`、`DEPLOYMENT_STATUS.md`、`VULTR_QUICK_START.md`、`NGINX_CONFIG.md`、`NGINX_UPLOADS_FIX.md`、`DEPLOY_UPDATE.md`）。
 - readme/：Assistant/AI 專題文檔與提示詞（如 `OpenAI Assistant 配置指南.md`、`創建新的 Assistant.md`、`showartz Tarot 顧問＋商品推薦助理提示詞`、`showartz_product_tools_schema.json`）。
 - 規則：新增文檔請依主題放到對應目錄，並在本索引補上一行用途描述。
 
@@ -360,6 +370,21 @@
    - 修復 Analytics Stats API SQL 查詢語法錯誤
    - 修復 Pageview API 參數處理和數據庫表自動創建
    - 修復 UserManager 組件重複定義問題
+
+### Phase 10: 註冊功能修復與 UI 優化 (v1.1.2)
+1. ✅ **註冊功能修復**
+   - 修復資料庫初始化腳本 (`scripts/init-db.mjs`)：
+     - 處理空 `DATABASE_URL` 的情況，自動使用 socket 連接（與 `lib/db.ts` 邏輯一致）
+     - 添加 `users` 和 `addresses` 表格創建邏輯
+     - 添加 `thumbnail_url` 欄位支援
+     - 完善索引創建
+   - 改進註冊 API 錯誤處理 (`app/api/auth/user/register/route.ts`)：
+     - 提供更詳細的錯誤訊息（資料庫連接錯誤、表格不存在、重複註冊等）
+     - 幫助快速診斷註冊失敗原因
+2. ✅ **UI 優化**
+   - 商品頁 (`app/products/page.tsx`)：調整背景圖片容器，底部留白
+   - 故事頁 (`app/space/page.tsx`)：調整背景圖片容器，底部留白
+   - 提升視覺層次和閱讀體驗
 
 ## 環境設定
 

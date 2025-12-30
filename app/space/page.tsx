@@ -40,9 +40,9 @@ export default function SpacePage() {
 
   return (
     <div className="min-h-screen">
-      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14">
-        {/* 背景插圖全幅覆蓋 */}
-        <div className="pointer-events-none absolute inset-0 opacity-70 md:opacity-70">
+      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14 pb-20 md:pb-24">
+        {/* 背景插圖，下方留白 */}
+        <div className="pointer-events-none absolute inset-0 bottom-16 md:bottom-20 opacity-70 md:opacity-70">
           <Image
             src="/images/hero-illustration.png"
             alt="藝棧 Showartz 插圖"
