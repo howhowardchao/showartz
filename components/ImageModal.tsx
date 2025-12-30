@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Image as ImageType } from '@/lib/types';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
+import { isLocalUploadImage } from '@/lib/utils';
 
 interface ImageModalProps {
   image: ImageType;
@@ -43,6 +44,7 @@ export default function ImageModal({ image, onClose }: ImageModalProps) {
               sizes="(max-width: 768px) 90vw, 70vw"
               className="object-contain rounded-lg"
               priority
+              unoptimized={isLocalUploadImage(image.image_url)}
             />
           </div>
           {image.description && (

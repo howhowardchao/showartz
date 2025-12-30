@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Image as ImageType } from '@/lib/types';
 import ImageModal from '@/components/ImageModal';
+import { isLocalUploadImage } from '@/lib/utils';
 
 export default function SpacePage() {
   const [images, setImages] = useState<ImageType[]>([]);
@@ -100,6 +101,7 @@ export default function SpacePage() {
                     sizes="(max-width: 768px) 50vw, 25vw"
                     className="object-cover"
                     priority={false}
+                    unoptimized={isLocalUploadImage(image.image_url)}
                   />
                 </div>
                 

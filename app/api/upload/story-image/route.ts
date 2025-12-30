@@ -56,7 +56,19 @@ export async function POST(request: NextRequest) {
     const filepath = join(uploadDir, filename);
     await writeFile(filepath, buffer);
 
-    const publicUrl = `/uploads/story/${filename}`;
+    // 獲取完整 URL（生產環境）或相對路徑（開發環境）
+    const getPublicUrl = (relativePath: string) => {
+      if (process.env.NODE_ENV === 'production') {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                       request.headers.get('host') ? `https://${request.headers.get('host')}` : 
+                       'https://showartz.com';
+        return `${siteUrl}${relativePath}`;
+      }
+      return relativePath;
+    };
+
+    const relativePath = `/uploads/story/${filename}`;
+    const publicUrl = getPublicUrl(relativePath);
 
     return NextResponse.json(
       {

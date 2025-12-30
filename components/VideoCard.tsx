@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Video } from '@/lib/types';
 import { Play } from 'lucide-react';
 import { useState } from 'react';
+import { isLocalUploadImage } from '@/lib/utils';
 
 interface VideoCardProps {
   video: Video;
@@ -31,6 +32,7 @@ export default function VideoCard({ video, onClick }: VideoCardProps) {
             sizes="(max-width: 768px) 60vw, 25vw"
             className="object-cover"
             onError={() => setImageError(true)}
+            unoptimized={isLocalUploadImage(video.thumbnail_url)}
           />
         ) : (
           <>

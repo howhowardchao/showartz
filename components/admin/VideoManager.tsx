@@ -4,6 +4,7 @@ import NextImage from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { Video, VideoCategory } from '@/lib/types';
 import { Trash2, Plus, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { isLocalUploadImage } from '@/lib/utils';
 
 export default function VideoManager() {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -259,6 +260,7 @@ export default function VideoManager() {
                   fill
                   sizes="160px"
                   className="object-cover"
+                  unoptimized={isLocalUploadImage(newVideo.thumbnail_url)}
                 />
               </div>
             )}
@@ -374,6 +376,7 @@ export default function VideoManager() {
                         fill
                         sizes="160px"
                         className="object-cover"
+                        unoptimized={isLocalUploadImage(editData.thumbnail_url || video.thumbnail_url)}
                       />
                     </div>
                   )}

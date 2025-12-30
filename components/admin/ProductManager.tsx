@@ -4,6 +4,7 @@ import NextImage from 'next/image';
 import { useState, useEffect } from 'react';
 import { Product } from '@/lib/types';
 import { Trash2, Plus, Save, X, RefreshCw } from 'lucide-react';
+import { shouldDisableImageOptimization } from '@/lib/utils';
 
 export default function ProductManager() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -384,6 +385,7 @@ export default function ProductManager() {
                         fill
                         sizes="64px"
                         className="object-cover"
+                        unoptimized={shouldDisableImageOptimization(product.image_url)}
                       />
                     </div>
                   ) : (

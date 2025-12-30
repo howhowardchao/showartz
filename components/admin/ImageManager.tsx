@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { Image as ImageType } from '@/lib/types';
 import { Trash2, Plus, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { isLocalUploadImage } from '@/lib/utils';
 
 export default function ImageManager() {
   const [images, setImages] = useState<ImageType[]>([]);
@@ -192,6 +193,7 @@ export default function ImageManager() {
                   fill
                   sizes="128px"
                   className="object-cover"
+                  unoptimized={isLocalUploadImage(newImage.image_url)}
                 />
               </div>
             )}
@@ -238,6 +240,7 @@ export default function ImageManager() {
                 fill
                 sizes="200px"
                 className="object-cover"
+                unoptimized={isLocalUploadImage(image.image_url)}
               />
             </div>
             {image.description && (

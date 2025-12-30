@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Product } from '@/lib/types';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { shouldDisableImageOptimization } from '@/lib/utils';
 
 interface ProductCardProps {
   product: Product;
@@ -60,6 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               sizes="(max-width: 768px) 50vw, 25vw"
               className="object-cover"
               onError={() => setImageError(true)}
+              unoptimized={shouldDisableImageOptimization(getValidImageUrl()!)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-[var(--border)]/50">
