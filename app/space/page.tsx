@@ -41,7 +41,7 @@ export default function SpacePage() {
 
   return (
     <div className="min-h-screen">
-      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14 pb-20 md:pb-24 -mt-[1px]">
+      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14 -mt-[1px]">
         {/* 背景插圖全幅覆蓋，延伸到導航欄下方 */}
         <div className="pointer-events-none absolute inset-0 opacity-70 md:opacity-70">
           <Image
@@ -53,8 +53,6 @@ export default function SpacePage() {
             priority
           />
         </div>
-        {/* 底部白色遮罩，實現留白效果 */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-white pointer-events-none"></div>
         <div className="relative z-10 container mx-auto px-4">
           <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-[var(--muted)] shadow-sm">
