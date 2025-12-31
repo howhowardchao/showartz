@@ -236,7 +236,7 @@ export default function ImageManager() {
             <div className="relative aspect-square bg-magic-dark rounded-lg overflow-hidden">
               <Image
                 src={image.image_url}
-                alt={image.description || '空間照片'}
+                alt={image.description || '故事照片'}
                 fill
                 sizes="200px"
                 className="object-cover"

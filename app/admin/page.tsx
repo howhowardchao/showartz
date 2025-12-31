@@ -69,7 +69,7 @@ export default function AdminPage() {
   const tabs = [
     { id: 'analytics' as TabType, label: '訪客統計', icon: BarChart3 },
     { id: 'videos' as TabType, label: '媒體管理', icon: Video },
-    { id: 'images' as TabType, label: '圖片管理', icon: ImageIcon },
+    { id: 'images' as TabType, label: '故事管理', icon: ImageIcon },
     { id: 'products' as TabType, label: '商品管理', icon: Package },
     { id: 'users' as TabType, label: '會員管理', icon: Users },
   ];
