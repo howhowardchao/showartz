@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, createUser } from '@/lib/db';
+import { getUserByEmail, createUser, executeWithAutoInit } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -31,8 +31,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 檢查電子郵件是否已存在
-    const existingUser = await getUserByEmail(email);
+    // 檢查電子郵件是否已存在（自動處理資料庫初始化）
+    const existingUser = await executeWithAutoInit(
+      () => getUserByEmail(email),
+      'Register'
+    );
+
     if (existingUser) {
       return NextResponse.json(
         { error: '此電子郵件已被註冊' },
@@ -40,9 +44,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 建立用戶
+    // 建立用戶（自動處理資料庫初始化）
     const passwordHash = await hashPassword(password);
-    const user = await createUser(email, passwordHash, name, nickname);
+    const user = await executeWithAutoInit(
+      () => createUser(email, passwordHash, name, nickname),
+      'Register'
+    );
 
     // 不返回密碼雜湊
     const { password_hash, ...userWithoutPassword } = user as any;
@@ -62,9 +69,13 @@ export async function POST(request: NextRequest) {
       if (error.message.includes('connect') || error.message.includes('ECONNREFUSED')) {
         errorMessage = '無法連接到資料庫，請檢查資料庫服務是否運行';
       }
+      // 資料庫初始化錯誤
+      else if (error.message.includes('資料庫初始化失敗')) {
+        errorMessage = error.message;
+      }
       // 資料庫查詢錯誤
       else if (error.message.includes('relation') || error.message.includes('does not exist')) {
-        errorMessage = '資料庫表格不存在，請先初始化資料庫';
+        errorMessage = '資料庫表格不存在，請聯繫管理員初始化資料庫';
       }
       // 其他資料庫錯誤
       else if (error.message.includes('duplicate') || error.message.includes('unique')) {

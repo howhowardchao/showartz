@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, updateUserLastLogin } from '@/lib/db';
+import { getUserByEmail, updateUserLastLogin, executeWithAutoInit } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 const USER_SESSION_COOKIE_NAME = 'user_session';
@@ -15,7 +15,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await getUserByEmail(email);
+    // 查詢用戶（自動處理資料庫初始化）
+    const user = await executeWithAutoInit(
+      () => getUserByEmail(email),
+      'Login'
+    );
+
     if (!user) {
       return NextResponse.json(
         { error: '電子郵件或密碼錯誤' },
@@ -75,8 +80,26 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Login error:', error);
+    
+    // 提供更詳細的錯誤訊息
+    let errorMessage = '登入失敗，請稍後再試';
+    if (error instanceof Error) {
+      // 資料庫連接錯誤
+      if (error.message.includes('connect') || error.message.includes('ECONNREFUSED')) {
+        errorMessage = '無法連接到資料庫，請檢查資料庫服務是否運行';
+      }
+      // 資料庫初始化錯誤
+      else if (error.message.includes('資料庫初始化失敗')) {
+        errorMessage = error.message;
+      }
+      // 其他錯誤
+      else if (!error.message.includes('電子郵件或密碼錯誤')) {
+        errorMessage = `登入失敗：${error.message}`;
+      }
+    }
+    
     return NextResponse.json(
-      { error: '登入失敗，請稍後再試' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

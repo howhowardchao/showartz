@@ -4,11 +4,54 @@
 
 ## 📌 版本資訊
 
-**當前版本**: v1.1.2  
-**最後更新**: 2024-12-25  
+**當前版本**: v1.2.0  
+**最後更新**: 2024-12-31  
 **部署狀態**: ✅ 已部署至生產環境 (https://showartz.com)
 
-### 最新更新 (v1.1.2 - 2024-12-25)
+### 最新更新 (v1.2.0 - 2024-12-31)
+- 🎨 **前端重新設計**：
+  - 全面優化 UI/UX 設計，採用現代化簡潔風格
+  - 統一色彩系統與間距規範，提升視覺一致性
+  - 優化響應式佈局，改善手機、平板、桌面體驗
+  - 改進導航系統與頁面轉場動畫
+  - 優化商品卡片與影片卡片設計，提升視覺吸引力
+- 🖼️ **商品圖片顯示修正**：
+  - 修正商品圖片載入錯誤處理機制
+  - 自動過濾占位圖片（space.gif），避免顯示無效圖片
+  - 優化圖片載入性能，支援 Next.js Image 優化
+  - 改進圖片錯誤回退機制，顯示友好的「無圖片」提示
+  - 修正跨域圖片載入問題，支援外部圖片來源
+- 📊 **流量分析系統開發**：
+  - 完整的訪客追蹤系統（Analytics 組件）
+  - 自動記錄頁面瀏覽、會話、訪客行為
+  - 後台統計儀表板（AnalyticsDashboard）
+  - 支援時間範圍篩選（今天、本週、本月）
+  - 統計數據包含：訪客數、會話數、頁面瀏覽、裝置類型、熱門頁面等
+  - API 端點：`/api/analytics/stats`、`/api/analytics/pageview`、`/api/analytics/session/end`
+- 🔐 **註冊與登入系統開發**：
+  - 完整的用戶註冊功能（`/register`）
+  - 用戶登入功能（`/login`）
+  - Session 管理系統（Base64 Cookie）
+  - 密碼加密（bcryptjs）
+  - 資料庫自動初始化功能（`executeWithAutoInit`）
+  - 用戶資料表（users）與地址表（addresses）
+  - API 端點：`/api/auth/user/register`、`/api/auth/user/login`、`/api/auth/user/me`
+- 🔧 **資料庫自動初始化**：
+  - 新增 `executeWithAutoInit` 輔助函數，自動檢測並初始化資料庫
+  - 註冊與登入 API 自動處理資料庫表格不存在的情況
+  - 統一錯誤處理機制，提供清晰的錯誤訊息
+- 📸 **圖片部署注意事項**：
+  - 本機端與主機端圖片需要手動同步
+  - 使用 `scp` 或 `rsync` 同步圖片檔案到主機端
+  - Docker 容器內圖片需要手動複製（`docker cp`）
+  - 建議使用 volume 掛載或 CI/CD 自動部署
+- 💰 **幣值問題說明**：
+  - 本機端（台灣）與主機端（日本）位置不同，會影響商品價格幣值
+  - Pinkoi API 會根據主機位置回傳不同幣值（日本主機回傳 JPY，台灣主機回傳 TWD）
+  - 建議將主機設於台灣（如 Vultr 台北節點）以取得 TWD 價格
+  - 或實作幣值轉換功能，統一顯示為 TWD
+
+### 歷史更新 (v1.1.2 - 2024-12-25)
 - 🔧 **註冊功能修復**：
   - 修復資料庫初始化腳本，處理空 `DATABASE_URL` 的情況，自動使用 socket 連接
   - 改進註冊 API 錯誤處理，提供更詳細的錯誤訊息以便診斷問題
@@ -385,6 +428,38 @@
    - 商品頁 (`app/products/page.tsx`)：調整背景圖片容器，底部留白
    - 故事頁 (`app/space/page.tsx`)：調整背景圖片容器，底部留白
    - 提升視覺層次和閱讀體驗
+
+### Phase 11: 前端重新設計與核心功能開發 (v1.2.0)
+1. ✅ **前端重新設計**
+   - 全面優化 UI/UX 設計，採用現代化簡潔風格
+   - 統一色彩系統與間距規範（CSS 變數系統）
+   - 優化響應式佈局，改善各種裝置體驗
+   - 改進導航系統與頁面轉場動畫
+   - 優化商品卡片與影片卡片設計
+2. ✅ **商品圖片顯示修正**
+   - 修正商品圖片載入錯誤處理機制 (`components/ProductCard.tsx`)
+   - 自動過濾占位圖片（space.gif），避免顯示無效圖片
+   - 優化圖片載入性能，支援 Next.js Image 優化
+   - 改進圖片錯誤回退機制，顯示友好的「無圖片」提示
+   - 修正跨域圖片載入問題，支援外部圖片來源
+3. ✅ **流量分析系統開發**
+   - 前端追蹤組件 (`components/Analytics.tsx`)：自動記錄訪客行為
+   - 後台統計儀表板 (`components/admin/AnalyticsDashboard.tsx`)
+   - 資料庫設計：sessions、page_views、visitors、events 表
+   - API 端點：`/api/analytics/stats`、`/api/analytics/pageview`、`/api/analytics/session/end`
+   - 支援時間範圍篩選：今天、本週、本月
+   - 統計數據包含：訪客數、會話數、頁面瀏覽、裝置類型、熱門頁面、新訪客 vs 回訪者
+4. ✅ **註冊與登入系統開發**
+   - 註冊頁面 (`app/register/page.tsx`)：完整的用戶註冊表單
+   - 登入頁面 (`app/login/page.tsx`)：用戶登入功能
+   - Session 管理系統：Base64 Cookie 存儲
+   - 密碼加密：bcryptjs
+   - API 端點：
+     - `POST /api/auth/user/register`：用戶註冊
+     - `POST /api/auth/user/login`：用戶登入
+     - `GET /api/auth/user/me`：取得當前用戶資訊
+   - 資料庫自動初始化功能 (`lib/db.ts` 的 `executeWithAutoInit`)
+   - 用戶資料表（users）與地址表（addresses）完整設計
 
 ## 環境設定
 
@@ -954,6 +1029,30 @@ showartz251120/
    - 將沒有任何圖片的商品標記為下架（is_active=false），前台不再顯示無圖商品
 7. **LOGO 設定**：請將 LOGO 圖片放在 `public/showartzlogo.*`
 8. **Pinkoi 幣別來源差異**：主機位於日本時，Pinkoi API 常回傳日幣 (JPY)，需透過 Header/Cookie 或換算為 TWD；本機（台灣）通常直接取得 TWD。若要避免換算，建議將主機設於台灣（例：Vultr 台北節點），直接取得 TWD 價格。
+9. **本機端與主機端同步**：
+   - **代碼同步**：使用 Git 進行版本控制，主機端透過 `git pull` 更新
+   - **圖片同步**：需要手動使用 `scp` 或 `rsync` 同步圖片檔案
+   - **環境變數**：本機端使用 `.env.local`，主機端使用 `.env`，需分別配置
+   - **資料庫**：本機端與主機端使用不同的資料庫實例，資料不會自動同步
+10. **圖片部署注意事項**：
+    - 本機端更新的圖片（如 `public/images/hero-illustration.png`）需要手動同步到主機端
+    - 同步方法：
+      ```bash
+      # 使用 scp 同步
+      scp public/images/hero-illustration.png root@45.63.123.237:/opt/showartz/public/images/
+      
+      # 複製到 Docker 容器內
+      ssh root@45.63.123.237 "docker cp /opt/showartz/public/images/hero-illustration.png showartz-app:/app/public/images/hero-illustration.png"
+      ```
+    - 或使用提供的同步腳本：`scripts/sync-files.sh`
+    - 如果使用 Docker volume 掛載，同步到主機端後容器會自動看到更新
+11. **幣值問題**：
+    - **問題描述**：本機端（台灣）與主機端（日本）位置不同，Pinkoi API 會根據主機位置回傳不同幣值
+    - **影響**：日本主機回傳 JPY，台灣主機回傳 TWD，導致價格顯示不一致
+    - **解決方案**：
+      - 方案 1（推薦）：將主機設於台灣（如 Vultr 台北節點），直接取得 TWD 價格
+      - 方案 2：實作幣值轉換功能，統一顯示為 TWD
+      - 方案 3：使用 Pinkoi API 的 Header/Cookie 指定幣值
 
 ## 授權
 

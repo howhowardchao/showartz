@@ -809,6 +809,40 @@ export async function deactivateProductsWithoutImages(): Promise<number> {
   return result.rowCount ?? 0;
 }
 
+/**
+ * 執行資料庫操作，如果表格不存在則自動初始化
+ * @param operation 要執行的資料庫操作函數
+ * @param context 上下文名稱（用於日誌）
+ * @returns 操作結果
+ */
+export async function executeWithAutoInit<T>(
+  operation: () => Promise<T>,
+  context: string = 'Database'
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    // 檢查是否為表格不存在的錯誤
+    if (
+      error instanceof Error &&
+      (error.message.includes('relation') || error.message.includes('does not exist'))
+    ) {
+      console.log(`[${context}] 檢測到資料庫表格不存在，嘗試自動初始化...`);
+      try {
+        await initDatabase();
+        console.log(`[${context}] 資料庫初始化成功，重試操作...`);
+        // 初始化成功後，重試操作
+        return await operation();
+      } catch (initError) {
+        console.error(`[${context}] 資料庫初始化失敗:`, initError);
+        throw new Error('資料庫初始化失敗，請聯繫管理員');
+      }
+    }
+    // 其他錯誤直接拋出
+    throw error;
+  }
+}
+
 // User operations
 export interface User {
   id: string;
