@@ -8,8 +8,8 @@ import VideoGrid from '@/components/VideoGrid';
 export default function Home() {
   return (
     <div className="min-h-screen">
-      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14">
-        {/* 背景插圖全幅覆蓋 */}
+      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14 -mt-[1px]">
+        {/* 背景插圖全幅覆蓋，延伸到導航欄下方 */}
         <div className="pointer-events-none absolute inset-0 opacity-70 md:opacity-70">
           <Image
             src="/images/hero-illustration.png"

@@ -135,9 +135,9 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen">
-      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14 pb-20 md:pb-24">
-        {/* 背景插圖，下方留白 */}
-        <div className="pointer-events-none absolute inset-0 bottom-16 md:bottom-20 opacity-70 md:opacity-70">
+      <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14 pb-20 md:pb-24 -mt-[1px]">
+        {/* 背景插圖全幅覆蓋，延伸到導航欄下方 */}
+        <div className="pointer-events-none absolute inset-0 opacity-70 md:opacity-70">
           <Image
             src="/images/hero-illustration.png"
             alt="藝棧 Showartz 插圖"
@@ -147,6 +147,8 @@ export default function ProductsPage() {
             priority
           />
         </div>
+        {/* 底部白色遮罩，實現留白效果 */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-white pointer-events-none"></div>
         <div className="relative z-10 container mx-auto px-4">
           <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-[var(--muted)] shadow-sm">
