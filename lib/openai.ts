@@ -182,9 +182,19 @@ export async function sendMessage(threadId: string, message: string): Promise<{
             });
             
             // 如果是商品相關函數且執行成功，保存商品列表
-            if ((functionName === 'recommend_products' || functionName === 'search_products_by_tags') 
-                && result.success && result.products) {
-              recommendedProducts = result.products;
+            if ((functionName === 'recommend_products' || 
+                 functionName === 'search_products_by_tags' || 
+                 functionName === 'get_all_products') 
+                && result.success && result.products && result.products.length > 0) {
+              // 如果是 get_all_products，只取前 3 個最熱門的（按 sales_count 排序）
+              if (functionName === 'get_all_products') {
+                const sortedProducts = [...result.products].sort((a, b) => 
+                  (b.sales_count || 0) - (a.sales_count || 0)
+                );
+                recommendedProducts = sortedProducts.slice(0, 3);
+              } else {
+                recommendedProducts = result.products;
+              }
               debugLog(`[OpenAI] Extracted products from ${functionName}:`, recommendedProducts.length);
             }
             

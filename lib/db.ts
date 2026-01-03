@@ -250,6 +250,27 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
       CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
     `);
+
+    // Create service_settings table for rate limiting configuration
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS service_settings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        setting_key TEXT UNIQUE NOT NULL,
+        setting_value JSONB NOT NULL,
+        description TEXT,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_by TEXT
+      );
+    `);
+
+    // Insert default settings if they don't exist
+    await client.query(`
+      INSERT INTO service_settings (setting_key, setting_value, description)
+      VALUES 
+        ('rate_limit_guest', '{"conversation_limit_ms": 180000, "cooldown_ms": 300000}', '未登入訪客的速率限制設定'),
+        ('rate_limit_member', '{"conversation_limit_ms": 300000, "cooldown_ms": 60000}', '登入會員的速率限制設定')
+      ON CONFLICT (setting_key) DO NOTHING;
+    `);
   } finally {
     client.release();
   }
@@ -1113,6 +1134,68 @@ export async function deleteUser(userId: string): Promise<boolean> {
   // 再刪除用戶
   const result = await getPool().query('DELETE FROM users WHERE id = $1', [userId]);
   return (result.rowCount ?? 0) > 0;
+}
+
+// Service Settings operations
+export interface ServiceSetting {
+  id: string;
+  setting_key: string;
+  setting_value: {
+    conversation_limit_ms: number;
+    cooldown_ms: number;
+  };
+  description: string | null;
+  updated_at: Date;
+  updated_by: string | null;
+}
+
+export async function getServiceSetting(settingKey: string): Promise<ServiceSetting | null> {
+  return executeWithAutoInit(async () => {
+    const result = await getPool().query(
+      'SELECT * FROM service_settings WHERE setting_key = $1',
+      [settingKey]
+    );
+    if (result.rows.length === 0) return null;
+    return {
+      ...result.rows[0],
+      setting_value: result.rows[0].setting_value,
+    };
+  }, 'getServiceSetting');
+}
+
+export async function getAllServiceSettings(): Promise<ServiceSetting[]> {
+  return executeWithAutoInit(async () => {
+    const result = await getPool().query(
+      'SELECT * FROM service_settings ORDER BY setting_key'
+    );
+    return result.rows.map(row => ({
+      ...row,
+      setting_value: row.setting_value,
+    }));
+  }, 'getAllServiceSettings');
+}
+
+export async function updateServiceSetting(
+  settingKey: string,
+  settingValue: { conversation_limit_ms: number; cooldown_ms: number },
+  updatedBy?: string
+): Promise<ServiceSetting> {
+  return executeWithAutoInit(async () => {
+    const result = await getPool().query(
+      `UPDATE service_settings 
+       SET setting_value = $1, updated_at = CURRENT_TIMESTAMP, updated_by = $3
+       WHERE setting_key = $2
+       RETURNING *`,
+      [JSON.stringify(settingValue), settingKey, updatedBy || null]
+    );
+    if (result.rows.length === 0) {
+      throw new Error(`Setting ${settingKey} not found`);
+    }
+    return {
+      ...result.rows[0],
+      setting_value: result.rows[0].setting_value,
+    };
+  }, 'updateServiceSetting');
 }
 
 // 為 default 匯出提供現成的 Pool 實例，符合原本 pool.query 的使用方式

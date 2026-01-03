@@ -9,9 +9,10 @@ import ImageManager from '@/components/admin/ImageManager';
 import ProductManager from '@/components/admin/ProductManager';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import UserManager from '@/components/admin/UserManager';
-import { LogOut, BarChart3, Video, Image as ImageIcon, Package, Users } from 'lucide-react';
+import ServiceSettings from '@/components/admin/ServiceSettings';
+import { LogOut, BarChart3, Video, Image as ImageIcon, Package, Users, Settings } from 'lucide-react';
 
-type TabType = 'analytics' | 'videos' | 'images' | 'products' | 'users';
+type TabType = 'analytics' | 'videos' | 'images' | 'products' | 'users' | 'settings';
 
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -72,6 +73,7 @@ export default function AdminPage() {
     { id: 'images' as TabType, label: '故事管理', icon: ImageIcon },
     { id: 'products' as TabType, label: '商品管理', icon: Package },
     { id: 'users' as TabType, label: '會員管理', icon: Users },
+    { id: 'settings' as TabType, label: '服務設定', icon: Settings },
   ];
 
   return (
@@ -121,6 +123,7 @@ export default function AdminPage() {
         {activeTab === 'images' && <ImageManager />}
         {activeTab === 'products' && <ProductManager />}
         {activeTab === 'users' && <UserManager />}
+        {activeTab === 'settings' && <ServiceSettings />}
       </div>
     </div>
   );

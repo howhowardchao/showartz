@@ -6,7 +6,10 @@ import {
   canStartConversation,
   startConversation,
   isConversationActive,
+  getCooldownRemaining,
+  getRateLimitSettings,
 } from '@/lib/chat-limiter';
+import { getUserSession } from '@/app/api/auth/user/session/route';
 import { Product } from '@/lib/types';
 
 const toErrorMessage = (error: unknown) =>
@@ -21,31 +24,81 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    // 獲取客戶端 IP
-    const clientIP = getClientIP(request);
-    console.log('[Search API] Client IP:', clientIP);
+    // 檢查用戶是否登入
+    const userSession = getUserSession(request);
+    const isMember = !!userSession && userSession.type === 'user';
+    
+    // 獲取標識符：會員使用 userId，訪客使用 IP
+    const identifier = isMember ? userSession.userId : getClientIP(request);
+    console.log('[Search API] User:', { isMember, identifier: identifier.substring(0, 10) + '...' });
 
-    // 檢查對話限制
+    // 檢查對話限制（使用動態設定）
     if (!threadId) {
       // 新對話：檢查是否可以開始
-      const canStart = canStartConversation(clientIP);
+      const canStart = await canStartConversation(identifier, isMember);
       if (!canStart.allowed) {
+        // 獲取實際的冷卻期剩餘時間
+        const cooldownRemaining = getCooldownRemaining(identifier, isMember);
+        const limits = await getRateLimitSettings(isMember);
+        const cooldownSeconds = Math.ceil(limits.cooldown_ms / 1000);
+        const cooldownMinutes = Math.ceil(cooldownSeconds / 60);
+        
+        // 如果有剩餘時間，顯示剩餘時間；否則顯示完整的冷卻期
+        let waitTime: string;
+        if (cooldownRemaining !== null && cooldownRemaining > 0) {
+          const remainingMinutes = Math.ceil(cooldownRemaining / 60);
+          waitTime = remainingMinutes > 1 ? `${remainingMinutes} 分鐘` : `${cooldownRemaining} 秒`;
+        } else {
+          waitTime = cooldownMinutes > 1 ? `${cooldownMinutes} 分鐘` : `${cooldownSeconds} 秒`;
+        }
+        
+        // 構建錯誤訊息
+        let cooldownMsg = `抱歉，目前我的對話時間有限時，請您等候${waitTime}後再與我聊聊。`;
+        
+        // 如果用戶未登入，添加會員註冊建議
+        if (!isMember) {
+          cooldownMsg += `\n\n💡 提示：加入會員可以獲得更多的聊天時間！立即[註冊會員](/register)享受更好的服務體驗。`;
+        }
+        
         return NextResponse.json(
           {
-            error: '抱歉，目前我的對話時間有限時，請您等候5分鐘後再與我聊聊。',
+            error: cooldownMsg,
           },
           { status: 429 } // 429 Too Many Requests
         );
       }
       // 可以開始新對話，記錄開始時間
-      startConversation(clientIP);
+      await startConversation(identifier, isMember);
     } else {
       // 繼續對話：檢查對話是否仍在時間限制內
-      const active = isConversationActive(clientIP);
+      const active = await isConversationActive(identifier, isMember);
       if (!active.active && active.reason === 'timeout') {
+        // 獲取實際的冷卻期剩餘時間
+        const cooldownRemaining = getCooldownRemaining(identifier, isMember);
+        const limits = await getRateLimitSettings(isMember);
+        const cooldownSeconds = Math.ceil(limits.cooldown_ms / 1000);
+        const cooldownMinutes = Math.ceil(cooldownSeconds / 60);
+        
+        // 如果有剩餘時間，顯示剩餘時間；否則顯示完整的冷卻期
+        let waitTime: string;
+        if (cooldownRemaining !== null && cooldownRemaining > 0) {
+          const remainingMinutes = Math.ceil(cooldownRemaining / 60);
+          waitTime = remainingMinutes > 1 ? `${remainingMinutes} 分鐘` : `${cooldownRemaining} 秒`;
+        } else {
+          waitTime = cooldownMinutes > 1 ? `${cooldownMinutes} 分鐘` : `${cooldownSeconds} 秒`;
+        }
+        
+        // 構建錯誤訊息
+        let cooldownMsg = `抱歉，目前我的對話時間有限時，請您等候${waitTime}後再與我聊聊。`;
+        
+        // 如果用戶未登入，添加會員註冊建議
+        if (!isMember) {
+          cooldownMsg += `\n\n💡 提示：加入會員可以獲得更多的聊天時間！立即[註冊會員](/register)享受更好的服務體驗。`;
+        }
+        
         return NextResponse.json(
           {
-            error: '抱歉，目前我的對話時間有限時，請您等候5分鐘後再與我聊聊。',
+            error: cooldownMsg,
           },
           { status: 429 }
         );
@@ -108,17 +161,22 @@ export async function POST(request: NextRequest) {
       // 查找並移除 JSON 格式的 metadata（可能出現在回應的開頭、中間或結尾）
       let cleanedResponse = response;
       
-      // 移除結尾的 JSON metadata（最常見的情況）
-      const jsonMetadataPattern = /\s*\{[\s\S]*?"stage"[\s\S]*?\}\s*$/;
-      cleanedResponse = cleanedResponse.replace(jsonMetadataPattern, '').trim();
+      // 移除結尾的 JSON metadata（最常見的情況）- 更精確的匹配
+      const jsonMetadataPatternEnd = /\s*\{[\s\S]*?"(?:stage|product|tarot)"[\s\S]*?\}\s*$/;
+      cleanedResponse = cleanedResponse.replace(jsonMetadataPatternEnd, '').trim();
       
       // 移除開頭的 JSON metadata
-      const jsonMetadataPatternStart = /^\s*\{[\s\S]*?"stage"[\s\S]*?\}\s*/;
+      const jsonMetadataPatternStart = /^\s*\{[\s\S]*?"(?:stage|product|tarot)"[\s\S]*?\}\s*/;
       cleanedResponse = cleanedResponse.replace(jsonMetadataPatternStart, '').trim();
       
-      // 移除中間的 JSON metadata（如果存在）
-      const jsonMetadataPatternMiddle = /\s*\{[\s\S]*?"stage"[\s\S]*?\}\s*/;
+      // 移除中間的 JSON metadata（如果存在）- 更精確的匹配
+      const jsonMetadataPatternMiddle = /\s*\{[\s\S]*?"(?:stage|product|tarot)"[\s\S]*?\}\s*/g;
       cleanedResponse = cleanedResponse.replace(jsonMetadataPatternMiddle, ' ').trim();
+      
+      // 移除任何殘留的 JSON 格式內容（更徹底的清理）
+      // 匹配任何看起來像 JSON 對象的內容（包含 "stage", "product", "tarot" 等關鍵字）
+      const anyJsonPattern = /\s*\{[^}]*"(?:stage|product|tarot|need_recommend|budget|category|goal)"[^}]*\}\s*/g;
+      cleanedResponse = cleanedResponse.replace(anyJsonPattern, '').trim();
       
       // 如果清理後的回應為空，使用原始回應
       response = cleanedResponse || response;
@@ -153,56 +211,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 優先使用 Function Calling 返回的商品
-    let recommendedProducts = functionCallingProducts || null;
-
-    // 如果 Function Calling 沒有返回商品，才使用後處理邏輯（關鍵字匹配）
-    if (!recommendedProducts) {
-      // 檢查回應中是否包含商品推薦需求
-      // 只在明確需要推薦商品時才返回商品列表
-      
-      // 更精確的判斷：檢查是否在推薦階段
-      // 1. 檢查是否有明確的推薦意圖（不是簡單的關鍵字匹配）
-      // 2. 檢查是否提到了具體的商品類型或需求
-      const hasExplicitRecommendation = 
-        (response.includes('推薦') && (response.includes('商品') || response.includes('產品'))) ||
-        (response.includes('適合') && (response.includes('商品') || response.includes('產品'))) ||
-        (response.includes('建議') && (response.includes('商品') || response.includes('產品'))) ||
-        response.includes('🔮') || // 提示詞中使用的推薦標記
-        response.includes('商品名稱'); // 推薦格式中的標記
-      
-      // 排除問候和一般性建議
-      const isNotGreeting = !response.includes('你好') && !response.includes('問候');
-      const hasProductContext = response.includes('背包') || 
-                                response.includes('零錢包') || 
-                                response.includes('腰包') ||
-                                response.includes('貓頭鷹') ||
-                                response.includes('熊貓') ||
-                                response.includes('預算') ||
-                                response.includes('價格');
-
-      // 只在明確需要推薦且有商品上下文時才返回商品
-      if (hasExplicitRecommendation && isNotGreeting && hasProductContext) {
-        try {
-          console.log('[Search API] Detected product recommendation request (fallback), fetching products...');
-          // 從回應中提取可能的條件（這是一個簡化版本，未來可以改進）
-          recommendedProducts = await recommendProducts({});
-          // 限制返回數量為 5 個
-          if (recommendedProducts.length > 5) {
-            recommendedProducts = recommendedProducts.slice(0, 5);
-          }
-          console.log('[Search API] Found', recommendedProducts.length, 'products to recommend');
-        } catch (error) {
-          console.error('Error fetching recommended products:', error);
-          // 不影響主要回應，繼續返回
-        }
-      }
-    }
+    // 完全依賴 Function Calling 返回的商品
+    // 如果 AI 需要推薦商品，應該通過 Function Calling 來實現
+    // 這樣可以避免誤判和重複添加商品
+    const recommendedProducts = functionCallingProducts || undefined;
 
     return NextResponse.json({
       response,
       threadId: currentThreadId,
-      recommendedProducts: recommendedProducts || undefined,
+      recommendedProducts,
     });
   } catch (error: unknown) {
     console.error('Search error:', error);

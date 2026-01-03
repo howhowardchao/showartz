@@ -2,10 +2,15 @@
 
 import Image from 'next/image';
 import { Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import SearchAgent from '@/components/SearchAgent';
 import VideoGrid from '@/components/VideoGrid';
+import { Product } from '@/lib/types';
 
 export default function Home() {
+  // 保留 onProductRecommendation 回調以備將來使用，但目前不顯示推薦商品區塊
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[] | undefined>(undefined);
+
   return (
     <div className="min-h-screen">
       <section className="relative overflow-hidden border-b border-[var(--border)] py-10 md:py-14 -mt-[1px]">
@@ -38,13 +43,23 @@ export default function Home() {
 
             {/* 搜尋工具 */}
             <div className="w-full">
-              <SearchAgent />
+              <SearchAgent
+                onProductRecommendation={(hasProducts, products) => {
+                  // 目前不使用推薦商品區塊，但保留回調以備將來使用
+                  // 商品會在聊天訊息中顯示，不需要額外的商品區塊
+                  if (hasProducts && products) {
+                    setRecommendedProducts([...products]);
+                  } else {
+                    setRecommendedProducts(undefined);
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
       </section>
       
-      {/* 內容區域：admin 貼入的 IG 卡片（後端來源） */}
+      {/* 內容區域：始終顯示 IG 精選 */}
       <div className="container mx-auto px-4 pt-6 pb-14 md:pb-18">
         <section className="space-y-4">
           <div>

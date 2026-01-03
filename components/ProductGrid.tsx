@@ -1,7 +1,7 @@
 'use client';
 
 import { Product } from '@/lib/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ProductCard from './ProductCard';
 
 interface ProductGridProps {
@@ -11,14 +11,31 @@ interface ProductGridProps {
 export default function ProductGrid({ recommendedProducts }: ProductGridProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const prevProductsRef = useRef<string>('');
 
   useEffect(() => {
     // 如果有推薦的商品，直接使用；否則從 API 獲取所有商品
     if (recommendedProducts && recommendedProducts.length > 0) {
-      setProducts(recommendedProducts);
+      // 使用商品ID序列化來比較是否有變化
+      const productsKey = recommendedProducts.map(p => p.id).join(',');
+      const hasChanged = prevProductsRef.current !== productsKey;
+      
+      if (hasChanged) {
+        prevProductsRef.current = productsKey;
+        console.log('[ProductGrid] Products changed, updating:', recommendedProducts.length, 'IDs:', productsKey);
+      } else {
+        console.log('[ProductGrid] Products unchanged, but forcing update:', recommendedProducts.length, 'IDs:', productsKey);
+      }
+      
+      // 強制更新：創建新數組引用，確保 React 檢測到變化
+      setProducts([...recommendedProducts]);
       setLoading(false);
-      console.log('[ProductGrid] Using recommended products:', recommendedProducts.length);
     } else {
+      // 當沒有推薦商品時，清空之前的商品ID記錄
+      if (prevProductsRef.current !== '') {
+        prevProductsRef.current = '';
+        console.log('[ProductGrid] Clearing recommended products');
+      }
       fetchProducts();
     }
   }, [recommendedProducts]);
